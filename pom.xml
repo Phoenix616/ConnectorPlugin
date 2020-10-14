@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>de.themoep.bukkitbungeeconnector</groupId>
+    <artifactId>parent</artifactId>
+    <version>parent</version>
+    <packaging>pom</packaging>
+
+    <properties>
+        <plugin.name>BukkitBungeeConnector</plugin.name>
+        <plugin.version>1.0-SNAPSHOT</plugin.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <build.number>${buildNumber}</build.number>
+        <minecraft.plugin.version>${project.version} ${buildDescription}</minecraft.plugin.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+
+    <modules>
+        <module>core</module>
+        <module>bukkit</module>
+        <module>bungee</module>
+        <module>plugin</module>
+    </modules>
+
+    <profiles>
+        <profile>
+            <id>static_build_number</id>
+            <activation>
+                <property>
+                    <name>!env.BUILD_NUMBER</name>
+                </property>
+            </activation>
+            <properties>
+                <buildNumber>0</buildNumber>
+                <buildDescription>(compiled at ${maven.build.timestamp})</buildDescription>
+            </properties>
+        </profile>
+        <profile>
+            <id>dynamic_build_number</id>
+            <activation>
+                <property>
+                    <name>env.BUILD_NUMBER</name>
+                </property>
+            </activation>
+            <properties>
+                <buildNumber>${env.BUILD_NUMBER}</buildNumber>
+                <buildDescription>(build ${env.BUILD_NUMBER})</buildDescription>
+            </properties>
+        </profile>
+    </profiles>
+
+</project>

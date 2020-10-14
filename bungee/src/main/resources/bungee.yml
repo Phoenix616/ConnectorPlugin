@@ -1,0 +1,4 @@
+name: BukkitBungeeConnector
+version: ${minecraft.plugin.version}
+main: de.themoep.bukkitbungeeconnector.bungee.BukkitBungeeConnector
+author: Phoenix616
