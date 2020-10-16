@@ -15,6 +15,8 @@ This does nothing on its own, it is meant to be depended on by other plugins so 
 
 ### Usage
 
+[Javadocs](https://docs.phoenix616.dev/connectorplugin/)
+
 Check [the wiki](https://wiki.phoenix616.dev/plugin:connectorplugin:usage:start) for usage examples.
 
 ### Maven Info

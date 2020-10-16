@@ -30,8 +30,8 @@ public interface ConnectorPlugin {
     Connector getConnector();
 
     /**
-     * The type of source that this plugin is. {@link MessageTarget.Source#SERVER} or {@link MessageTarget.Source#PROXY
-     * @return
+     * The type of source that this plugin is. {@link MessageTarget.Source#SERVER} or {@link MessageTarget.Source#PROXY}
+     * @return The type of {@link MessageTarget.Source} that this implementation provides.
      */
     MessageTarget.Source getSourceType();
 

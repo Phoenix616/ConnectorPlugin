@@ -9,6 +9,7 @@
     <artifactId>parent</artifactId>
     <version>parent</version>
     <packaging>pom</packaging>
+    <name>${plugin.name}</name>
 
     <properties>
         <plugin.name>ConnectorPlugin</plugin.name>
@@ -53,5 +54,18 @@
             </properties>
         </profile>
     </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <source>8</source>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
