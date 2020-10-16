@@ -20,7 +20,7 @@ package de.themoep.connectorplugin.bukkit.connector;
 
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
-import de.themoep.connectorplugin.MessageTarget;
+import de.themoep.connectorplugin.connector.MessageTarget;
 import de.themoep.connectorplugin.bukkit.BukkitConnectorPlugin;
 import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import org.bukkit.entity.Player;
@@ -53,25 +53,25 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
         ByteArrayDataInput in = ByteStreams.newDataInput(message);
         try {
             MessageTarget target = MessageTarget.valueOf(in.readUTF());
-            String plugin = in.readUTF();
+            String senderPlugin = in.readUTF();
             String action = in.readUTF();
             short length = in.readShort();
             byte[] data = new byte[length];
             in.readFully(data);
 
-            handle(plugin, action, target, player, data);
+            handle(senderPlugin, action, target, player, data);
         } catch (IllegalArgumentException e) {
             plugin.logError("Invalid message target! " + e.getMessage());
         }
     }
 
     @Override
-    public void sendData(ConnectingPlugin sender, String action, MessageTarget target, Player player, byte[] data) {
+    public void sendDataImplementation(ConnectingPlugin sender, String action, MessageTarget target, Player player, byte[] data) {
         byte[] dataToSend = writeToByteArray(target, sender, action, data);
 
         if (player != null) {
             player.sendPluginMessage(plugin, plugin.getMessageChannel(), dataToSend);
-        } else if (target != MessageTarget.CURRENT) {
+        } else if (target != MessageTarget.PROXY) {
             if (plugin.getServer().getOnlinePlayers().isEmpty()) {
                 queue.add(dataToSend);
             } else {

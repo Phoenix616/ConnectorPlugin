@@ -19,6 +19,7 @@ package de.themoep.connectorplugin;
  */
 
 import de.themoep.connectorplugin.connector.Connector;
+import de.themoep.connectorplugin.connector.MessageTarget;
 
 public interface ConnectorPlugin {
 
@@ -27,6 +28,12 @@ public interface ConnectorPlugin {
      * @return The Connector
      */
     Connector getConnector();
+
+    /**
+     * The type of source that this plugin is. {@link MessageTarget.Source#SERVER} or {@link MessageTarget.Source#PROXY
+     * @return
+     */
+    MessageTarget.Source getSourceType();
 
     default String getMessageChannel() {
         return "bbc:connection";

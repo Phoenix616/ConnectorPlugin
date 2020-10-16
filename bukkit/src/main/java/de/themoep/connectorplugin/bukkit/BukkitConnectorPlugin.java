@@ -21,6 +21,7 @@ package de.themoep.connectorplugin.bukkit;
 import de.themoep.connectorplugin.ConnectorPlugin;
 import de.themoep.connectorplugin.bukkit.connector.BukkitConnector;
 import de.themoep.connectorplugin.bukkit.connector.PluginMessageConnector;
+import de.themoep.connectorplugin.connector.MessageTarget;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class BukkitConnectorPlugin extends JavaPlugin implements ConnectorPlugin {
@@ -35,6 +36,11 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
     @Override
     public BukkitConnector getConnector() {
         return connector;
+    }
+
+    @Override
+    public MessageTarget.Source getSourceType() {
+        return MessageTarget.Source.SERVER;
     }
 
     @Override

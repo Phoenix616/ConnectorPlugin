@@ -1,4 +1,4 @@
-package de.themoep.connectorplugin;
+package de.themoep.connectorplugin.connector;
 
 /*
  * ConnectorPlugin
@@ -28,8 +28,34 @@ public enum MessageTarget {
      */
     ALL_QUEUE,
     /**
-     * Send to the players current server (if run on the proxy) or the proxy (if run on the Minecraft server)
-     * Requires a player parameter
+     * Send to the players current server.<br>
+     * Requires a player parameter.<br>
+     * Can only be sent from a {@link Source#PROXY}
      */
-    CURRENT;
+    SERVER(Source.PROXY),
+    /**
+     * Send to the players current proxy.<br>
+     * Requires a player parameter.<br>
+     * Can only be sent from a {@link Source#SERVER}
+     */
+    PROXY(Source.SERVER);
+
+    private final Source source;
+
+    MessageTarget() {
+        source = null;
+    }
+
+    MessageTarget(Source source) {
+        this.source = source;
+    }
+
+    public Source getSource() {
+        return source;
+    }
+
+    public enum Source {
+        PROXY,
+        SERVER
+    }
 }

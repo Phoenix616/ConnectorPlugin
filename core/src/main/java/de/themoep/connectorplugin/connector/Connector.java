@@ -23,7 +23,6 @@ import com.google.common.collect.Table;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.ConnectorPlugin;
-import de.themoep.connectorplugin.MessageTarget;
 
 import java.util.Locale;
 import java.util.Map;
@@ -63,10 +62,18 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
      * @param sender    The plugin which sends the data
      * @param action    The action for which data is sent
      * @param target    Where to send data to
-     * @param player    Additional player data to use for sending (required in case the target is {@link MessageTarget#CURRENT})
+     * @param player    Additional player data to use for sending (required in case the target is {@link MessageTarget#SERVER} or {@link MessageTarget#PROXY})
      * @param data      The data
      */
-    public abstract void sendData(ConnectingPlugin sender, String action, MessageTarget target, R player, byte[] data);
+    public void sendData(ConnectingPlugin sender, String action, MessageTarget target, R player, byte[] data) {
+        if (target.getSource() != null && target.getSource() != plugin.getSourceType()) {
+            throw new UnsupportedOperationException("Cannot send message with target " + target + " from " + plugin.getSourceType());
+        }
+
+        sendDataImplementation(sender, action, target, player, data);
+    }
+
+    protected abstract void sendDataImplementation(ConnectingPlugin sender, String action, MessageTarget target, R player, byte[] data);
 
     protected byte[] writeToByteArray(MessageTarget target, ConnectingPlugin sender, String action, byte[] data) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();

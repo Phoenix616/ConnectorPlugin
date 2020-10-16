@@ -21,6 +21,7 @@ package de.themoep.connectorplugin.bungee;
 import de.themoep.connectorplugin.ConnectorPlugin;
 import de.themoep.connectorplugin.bungee.connector.BungeeConnector;
 import de.themoep.connectorplugin.bungee.connector.PluginMessageConnector;
+import de.themoep.connectorplugin.connector.MessageTarget;
 import net.md_5.bungee.api.plugin.Plugin;
 
 public final class BungeeConnectorPlugin extends Plugin implements ConnectorPlugin {
@@ -35,6 +36,11 @@ public final class BungeeConnectorPlugin extends Plugin implements ConnectorPlug
     @Override
     public BungeeConnector getConnector() {
         return connector;
+    }
+
+    @Override
+    public MessageTarget.Source getSourceType() {
+        return MessageTarget.Source.PROXY;
     }
 
     @Override

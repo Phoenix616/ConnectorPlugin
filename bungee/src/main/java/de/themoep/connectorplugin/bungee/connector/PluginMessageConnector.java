@@ -20,7 +20,7 @@ package de.themoep.connectorplugin.bungee.connector;
 
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
-import de.themoep.connectorplugin.MessageTarget;
+import de.themoep.connectorplugin.connector.MessageTarget;
 import de.themoep.connectorplugin.bungee.BungeeConnectorPlugin;
 import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import net.md_5.bungee.api.config.ServerInfo;
@@ -57,15 +57,17 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
                 case ALL_QUEUE:
                     sendToAllAndQueue(event.getData());
                     break;
-                case CURRENT:
-                    String plugin = in.readUTF();
+                case PROXY:
+                    String senderPlugin = in.readUTF();
                     String action = in.readUTF();
                     short length = in.readShort();
                     byte[] data = new byte[length];
                     in.readFully(data);
 
-                    handle(plugin, action, target, (ProxiedPlayer) event.getReceiver(), data);
+                    handle(senderPlugin, action, target, (ProxiedPlayer) event.getReceiver(), data);
                     break;
+                default:
+                    plugin.logError("Receiving " + target + " is not supported!");
             }
         } catch (IllegalArgumentException e) {
             plugin.logError("Invalid message target! " + e.getMessage());
@@ -87,7 +89,7 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
     }
 
     @Override
-    public void sendData(ConnectingPlugin sender, String action, MessageTarget target, ProxiedPlayer player, byte[] data) {
+    public void sendDataImplementation(ConnectingPlugin sender, String action, MessageTarget target, ProxiedPlayer player, byte[] data) {
         byte[] dataToSend = writeToByteArray(target, sender, action, data);
 
         switch (target) {
@@ -97,7 +99,7 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
             case ALL_QUEUE:
                 sendToAllAndQueue(dataToSend);
                 break;
-            case CURRENT:
+            case SERVER:
                 if (player != null) {
                     player.getServer().sendData(plugin.getMessageChannel(), dataToSend);
                 } else {
