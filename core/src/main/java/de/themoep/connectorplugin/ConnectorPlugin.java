@@ -1,7 +1,7 @@
-package de.themoep.bukkitbungeeconnector;
+package de.themoep.connectorplugin;
 
 /*
- * BukkitBungeeConnector
+ * ConnectorPlugin
  * Copyright (C) 2020 Max Lee aka Phoenix616 (max@themoep.de)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@ package de.themoep.bukkitbungeeconnector;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import de.themoep.bukkitbungeeconnector.connector.Connector;
+import de.themoep.connectorplugin.connector.Connector;
 
 public interface ConnectorPlugin {
 

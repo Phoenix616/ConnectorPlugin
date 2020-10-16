@@ -1,5 +1,5 @@
-name: BukkitBungeeConnector
+name: ConnectorPlugin
 version: ${minecraft.plugin.version}
-main: de.themoep.bukkitbungeeconnector.bukkit.BukkitBungeeConnector
+main: de.themoep.connectorplugin.bukkit.BukkitConnectorPlugin
 api-version: 1.13
 authors: [Phoenix616]

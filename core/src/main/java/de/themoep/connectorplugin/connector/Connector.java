@@ -1,7 +1,7 @@
-package de.themoep.bukkitbungeeconnector.connector;
+package de.themoep.connectorplugin.connector;
 
 /*
- * BukkitBungeeConnector
+ * ConnectorPlugin
  * Copyright (C) 2020 Max Lee aka Phoenix616 (max@themoep.de)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,8 +22,8 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-import de.themoep.bukkitbungeeconnector.ConnectorPlugin;
-import de.themoep.bukkitbungeeconnector.MessageTarget;
+import de.themoep.connectorplugin.ConnectorPlugin;
+import de.themoep.connectorplugin.MessageTarget;
 
 import java.util.Locale;
 import java.util.Map;

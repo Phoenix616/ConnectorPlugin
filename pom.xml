@@ -5,13 +5,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>de.themoep.bukkitbungeeconnector</groupId>
+    <groupId>de.themoep.connectorplugin</groupId>
     <artifactId>parent</artifactId>
     <version>parent</version>
     <packaging>pom</packaging>
 
     <properties>
-        <plugin.name>BukkitBungeeConnector</plugin.name>
+        <plugin.name>ConnectorPlugin</plugin.name>
         <plugin.version>1.0-SNAPSHOT</plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <build.number>${buildNumber}</build.number>

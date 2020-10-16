@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>de.themoep.bukkitbungeeconnector</groupId>
+        <groupId>de.themoep.connectorplugin</groupId>
         <artifactId>parent</artifactId>
         <version>parent</version>
     </parent>

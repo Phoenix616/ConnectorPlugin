@@ -6,7 +6,7 @@
 
     <parent>
         <artifactId>parent</artifactId>
-        <groupId>de.themoep.bukkitbungeeconnector</groupId>
+        <groupId>de.themoep.connectorplugin</groupId>
         <version>parent</version>
     </parent>
 

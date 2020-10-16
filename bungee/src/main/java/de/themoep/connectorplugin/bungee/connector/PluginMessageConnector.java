@@ -1,7 +1,7 @@
-package de.themoep.bukkitbungeeconnector.bungee.connector;
+package de.themoep.connectorplugin.bungee.connector;
 
 /*
- * BukkitBungeeConnector
+ * ConnectorPlugin
  * Copyright (C) 2020 Max Lee aka Phoenix616 (max@themoep.de)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,9 +20,9 @@ package de.themoep.bukkitbungeeconnector.bungee.connector;
 
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
-import de.themoep.bukkitbungeeconnector.MessageTarget;
-import de.themoep.bukkitbungeeconnector.bungee.BukkitBungeeConnector;
-import de.themoep.bukkitbungeeconnector.connector.ConnectingPlugin;
+import de.themoep.connectorplugin.MessageTarget;
+import de.themoep.connectorplugin.bungee.BungeeConnectorPlugin;
+import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.PluginMessageEvent;
@@ -31,7 +31,7 @@ import net.md_5.bungee.event.EventHandler;
 
 public class PluginMessageConnector extends BungeeConnector implements Listener {
 
-    public PluginMessageConnector(BukkitBungeeConnector plugin) {
+    public PluginMessageConnector(BungeeConnectorPlugin plugin) {
         super(plugin);
         plugin.getProxy().registerChannel(plugin.getMessageChannel());
     }

@@ -1,7 +1,7 @@
-package de.themoep.bukkitbungeeconnector.bukkit.connector;
+package de.themoep.connectorplugin.bukkit;
 
 /*
- * BukkitBungeeConnector
+ * ConnectorPlugin
  * Copyright (C) 2020 Max Lee aka Phoenix616 (max@themoep.de)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,13 +18,27 @@ package de.themoep.bukkitbungeeconnector.bukkit.connector;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import de.themoep.bukkitbungeeconnector.bukkit.BukkitBungeeConnector;
-import de.themoep.bukkitbungeeconnector.connector.Connector;
-import org.bukkit.entity.Player;
+import de.themoep.connectorplugin.ConnectorPlugin;
+import de.themoep.connectorplugin.bukkit.connector.BukkitConnector;
+import de.themoep.connectorplugin.bukkit.connector.PluginMessageConnector;
+import org.bukkit.plugin.java.JavaPlugin;
 
-public abstract class BukkitConnector extends Connector<BukkitBungeeConnector, Player> {
+public final class BukkitConnectorPlugin extends JavaPlugin implements ConnectorPlugin {
 
-    public BukkitConnector(BukkitBungeeConnector plugin) {
-        super(plugin);
+    private BukkitConnector connector;
+
+    @Override
+    public void onEnable() {
+        connector = new PluginMessageConnector(this);
+    }
+
+    @Override
+    public BukkitConnector getConnector() {
+        return connector;
+    }
+
+    @Override
+    public void logError(String message) {
+        getLogger().severe(message);
     }
 }

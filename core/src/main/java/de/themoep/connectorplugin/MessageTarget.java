@@ -1,7 +1,7 @@
-package de.themoep.bukkitbungeeconnector.connector;
+package de.themoep.connectorplugin;
 
 /*
- * BukkitBungeeConnector
+ * ConnectorPlugin
  * Copyright (C) 2020 Max Lee aka Phoenix616 (max@themoep.de)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,6 +18,18 @@ package de.themoep.bukkitbungeeconnector.connector;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-public interface ConnectingPlugin {
-    String getName();
+public enum MessageTarget {
+    /**
+     * Sends to all servers that have players connected. (So this doesn't queue with plugin messages)
+     */
+    ALL_WITH_PLAYERS,
+    /**
+     * Tries to send to all servers. (With plugin messages it queues if no player is connected to server)
+     */
+    ALL_QUEUE,
+    /**
+     * Send to the players current server (if run on the proxy) or the proxy (if run on the Minecraft server)
+     * Requires a player parameter
+     */
+    CURRENT;
 }
