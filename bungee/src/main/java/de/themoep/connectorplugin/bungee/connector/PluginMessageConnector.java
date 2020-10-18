@@ -38,7 +38,7 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
 
     @EventHandler
     public void onPluginMessage(PluginMessageEvent event) {
-        if (!event.getTag().equals(plugin.getMessageChannel())) {
+        if (event.isCancelled() || !event.getTag().equals(plugin.getMessageChannel())) {
             return;
         }
 
