@@ -2,7 +2,13 @@
 
 Plugin to simplify communication between multiple Minecraft servers in a network (and their proxy).
 
-This does nothing on its own, it is meant to be depended on by other plugins so they can easily send data between servers without having to implement that logic themselves.
+This (currently) does nothing on its own, it is meant to be depended on by other plugins so they can easily send data between servers without having to implement that logic themselves.
+
+## Planed Features
+- [ ] Server-side command registration
+- [ ] Location/server state querying
+- [ ] Teleporting
+- [ ] Proxy-side Vault/Tresor integration
 
 ## Communication Methods
 
