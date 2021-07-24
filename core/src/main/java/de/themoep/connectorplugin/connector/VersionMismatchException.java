@@ -1,8 +1,6 @@
-package de.themoep.connectorplugin.bukkit.connector;
-
-/*
+package de.themoep.connectorplugin.connector;/*
  * ConnectorPlugin
- * Copyright (C) 2020 Max Lee aka Phoenix616 (max@themoep.de)
+ * Copyright (C) 2021 Max Lee aka Phoenix616 (max@themoep.de)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -18,18 +16,21 @@ package de.themoep.connectorplugin.bukkit.connector;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import de.themoep.connectorplugin.bukkit.BukkitConnectorPlugin;
-import de.themoep.connectorplugin.connector.Connector;
-import org.bukkit.entity.Player;
+public class VersionMismatchException extends Exception {
+    private final int receivedVersion;
+    private final int supportedVersion;
 
-public abstract class BukkitConnector extends Connector<BukkitConnectorPlugin, Player> {
-
-    public BukkitConnector(BukkitConnectorPlugin plugin) {
-        super(plugin);
+    public VersionMismatchException(int receivedVersion, int supportedVersion, String message) {
+        super(message);
+        this.receivedVersion = receivedVersion;
+        this.supportedVersion = supportedVersion;
     }
 
-    protected Player getReceiver(String name) {
-        return plugin.getServer().getPlayer(name);
+    public int getReceivedVersion() {
+        return receivedVersion;
     }
 
+    public int getSupportedVersion() {
+        return supportedVersion;
+    }
 }

@@ -6,6 +6,7 @@
         <artifactId>parent</artifactId>
         <groupId>de.themoep.connectorplugin</groupId>
         <version>parent</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -17,7 +18,13 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>21.0</version>
+            <version>${library.guava.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+            <version>${library.lettuce.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -27,4 +27,8 @@ public abstract class BungeeConnector extends Connector<BungeeConnectorPlugin, P
     public BungeeConnector(BungeeConnectorPlugin plugin) {
         super(plugin);
     }
+
+    protected ProxiedPlayer getReceiver(String name) {
+        return plugin.getProxy().getPlayer(name);
+    }
 }

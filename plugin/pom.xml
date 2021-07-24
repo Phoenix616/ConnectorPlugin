@@ -8,6 +8,7 @@
         <artifactId>parent</artifactId>
         <groupId>de.themoep.connectorplugin</groupId>
         <version>parent</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>plugin</artifactId>
@@ -32,6 +33,12 @@
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+            <version>${library.lettuce.version}</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -41,7 +48,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.3</version>
+                <version>3.2.4</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -50,6 +57,30 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <relocations>
+                        <relocation>
+                            <pattern>de.themoep.bungeeplugin</pattern>
+                            <shadedPattern>de.themoep.connectorplugin.bungee.plugin</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>io.lettuce</pattern>
+                            <shadedPattern>de.themoep.connectorplugin.lib.lettuce</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>io.netty</pattern>
+                            <shadedPattern>de.themoep.connectorplugin.lib.netty</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>reactor</pattern>
+                            <shadedPattern>de.themoep.connectorplugin.lib.reactor</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.reactivestreams</pattern>
+                            <shadedPattern>de.themoep.connectorplugin.lib.reactivestreams</shadedPattern>
+                        </relocation>
+                    </relocations>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -19,15 +19,18 @@ package de.themoep.connectorplugin.bungee.connector;
  */
 
 import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-import de.themoep.connectorplugin.connector.MessageTarget;
+import de.themoep.connectorplugin.connector.Message;
 import de.themoep.connectorplugin.bungee.BungeeConnectorPlugin;
-import de.themoep.connectorplugin.connector.ConnectingPlugin;
+import de.themoep.connectorplugin.connector.VersionMismatchException;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.PluginMessageEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
+
+import java.util.logging.Level;
 
 public class PluginMessageConnector extends BungeeConnector implements Listener {
 
@@ -48,9 +51,14 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
         }
 
         ByteArrayDataInput in = ByteStreams.newDataInput(event.getData());
+        String group = in.readUTF();
+
+        int messageLength = in.readInt();
+        byte[] messageData = new byte[messageLength];
+        in.readFully(messageData);
         try {
-            MessageTarget target = MessageTarget.valueOf(in.readUTF());
-            switch (target) {
+            Message message = Message.fromByteArray(messageData);
+            switch (message.getTarget()) {
                 case ALL_WITH_PLAYERS:
                     sendToAllWithPlayers(event.getData());
                     break;
@@ -58,19 +66,15 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
                     sendToAllAndQueue(event.getData());
                     break;
                 case PROXY:
-                    String senderPlugin = in.readUTF();
-                    String action = in.readUTF();
-                    short length = in.readShort();
-                    byte[] data = new byte[length];
-                    in.readFully(data);
-
-                    handle(senderPlugin, action, target, (ProxiedPlayer) event.getReceiver(), data);
+                    handle((ProxiedPlayer) event.getReceiver(), message);
                     break;
                 default:
-                    plugin.logError("Receiving " + target + " is not supported!");
+                    plugin.logError("Receiving " + message.getTarget() + " is not supported!");
             }
         } catch (IllegalArgumentException e) {
             plugin.logError("Invalid message target! " + e.getMessage());
+        } catch (VersionMismatchException e) {
+            plugin.getLogger().log(Level.WARNING, e.getMessage() + ". Ignoring message!");
         }
     }
 
@@ -89,10 +93,16 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
     }
 
     @Override
-    public void sendDataImplementation(ConnectingPlugin sender, String action, MessageTarget target, ProxiedPlayer player, byte[] data) {
-        byte[] dataToSend = writeToByteArray(target, sender, action, data);
+    public void sendDataImplementation(ProxiedPlayer player, Message message) {
+        byte[] messageData = message.writeToByteArray(plugin);
 
-        switch (target) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(plugin.getGroup());
+        out.writeInt(messageData.length);
+        out.write(messageData);
+        byte[] dataToSend = out.toByteArray();
+
+        switch (message.getTarget()) {
             case ALL_WITH_PLAYERS:
                 sendToAllWithPlayers(dataToSend);
                 break;
@@ -103,11 +113,11 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
                 if (player != null) {
                     player.getServer().sendData(plugin.getMessageChannel(), dataToSend);
                 } else {
-                    throw new UnsupportedOperationException("Could not send data to " + target + " as player wasn't specified!");
+                    throw new UnsupportedOperationException("Could not send data to " + message.getTarget() + " as player wasn't specified!");
                 }
                 break;
             default:
-                throw new UnsupportedOperationException("Sending to " + target + " is not supported!");
+                throw new UnsupportedOperationException("Sending to " + message.getTarget() + " is not supported!");
         }
     }
 }

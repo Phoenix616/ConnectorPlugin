@@ -14,7 +14,7 @@ This (currently) does nothing on its own, it is meant to be depended on by other
 
 - [x] Plugin Messages
 - [ ] peer-to-peer
-- [ ] redis pub sub
+- [x] redis pub sub
 - [ ] RabbitMQ
 
 ## Developer Info
@@ -38,7 +38,7 @@ Check [the wiki](https://wiki.phoenix616.dev/plugin:connectorplugin:usage:start)
 <dependency>
     <groupId>de.themoep.connectorplugin</groupId>
     <artifactId>[bukkit|bungee]</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1-SNAPSHOT</version>
     <scope>provided</scope>
 </dependency>
 ```

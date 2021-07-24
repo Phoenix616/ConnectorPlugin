@@ -8,6 +8,7 @@
         <groupId>de.themoep.connectorplugin</groupId>
         <artifactId>parent</artifactId>
         <version>parent</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>bungee</artifactId>
@@ -19,6 +20,10 @@
             <id>sonatype-oss-repo</id>
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>
+        <repository>
+            <id>minebench-repo</id>
+            <url>https://repo.minebench.de</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -27,6 +32,12 @@
             <artifactId>bungeecord-api</artifactId>
             <version>1.16-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>de.themoep</groupId>
+            <artifactId>bungeeplugin</artifactId>
+            <version>1.2-SNAPSHOT</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>${groupId}</groupId>

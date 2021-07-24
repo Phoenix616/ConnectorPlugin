@@ -21,16 +21,48 @@ package de.themoep.connectorplugin.bukkit;
 import de.themoep.connectorplugin.ConnectorPlugin;
 import de.themoep.connectorplugin.bukkit.connector.BukkitConnector;
 import de.themoep.connectorplugin.bukkit.connector.PluginMessageConnector;
+import de.themoep.connectorplugin.bukkit.connector.RedisConnector;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.util.Locale;
+import java.util.logging.Level;
 
 public final class BukkitConnectorPlugin extends JavaPlugin implements ConnectorPlugin {
 
     private BukkitConnector connector;
+    private String group;
+    private String serverName;
 
     @Override
     public void onEnable() {
-        connector = new PluginMessageConnector(this);
+        saveDefaultConfig();
+        reloadConfig();
+
+        group = getConfig().getString("group", "global");
+        serverName = getConfig().getString("server-name", "changeme");
+        if ("changeme".equals(serverName)) {
+            serverName = new File(".").getAbsoluteFile().getName();
+            getLogger().log(Level.WARNING, "Server name is not configured! Please set it in your plugin config! Using the name of the server directory name instead: " + serverName);
+        }
+
+        String messengerType = getConfig().getString("messenger-type", "plugin_messages").toLowerCase(Locale.ROOT);
+        switch (messengerType) {
+            default:
+                getLogger().log(Level.WARNING, "Messenger type '" + messengerType + "' is not supported, falling back to plugin messages!");
+            case "plugin_messages":
+                connector = new PluginMessageConnector(this);
+                break;
+            case "redis":
+                connector = new RedisConnector(this);
+                break;
+        }
+    }
+
+    @Override
+    public void onDisable() {
+        connector.close();
     }
 
     @Override
@@ -44,7 +76,20 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
     }
 
     @Override
-    public void logError(String message) {
-        getLogger().severe(message);
+    public void logWarning(String message, Throwable... throwables) {
+        getLogger().log(Level.WARNING, message, throwables.length > 0 ? throwables[0] : null);
+    }
+
+    @Override
+    public void logError(String message, Throwable... throwables) {
+        getLogger().log(Level.SEVERE, message, throwables.length > 0 ? throwables[0] : null);
+    }
+
+    public String getGroup() {
+        return group;
+    }
+
+    public String getServerName() {
+        return serverName;
     }
 }

@@ -20,8 +20,6 @@ package de.themoep.connectorplugin.connector;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.ConnectorPlugin;
 
 import java.util.Locale;
@@ -37,12 +35,12 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
         this.plugin = plugin;
     }
 
-    protected void handle(String pluginName, String action, MessageTarget target, R receiver, byte[] data) {
-        BiConsumer<R, byte[]> handler = handlers.get(pluginName.toLowerCase(Locale.ROOT), action);
+    protected void handle(R receiver, Message message) {
+        BiConsumer<R, byte[]> handler = handlers.get(message.getSendingPlugin().toLowerCase(Locale.ROOT), message.getAction());
         if (handler != null) {
-            handler.accept(receiver, data);
+            handler.accept(receiver, message.getData());
         } else {
-            plugin.logError("Plugin '" + pluginName + " did not register an action '" + action + "' but we received data with target '" + target + "' by " + receiver);
+            plugin.logError("Plugin '" + message.getSendingPlugin() + " did not register an action '" + message.getAction() + "' but we received data with target '" + message.getTarget() + "' by " + receiver);
         }
     }
 
@@ -73,17 +71,14 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
         sendDataImplementation(sender, action, target, player, data);
     }
 
-    protected abstract void sendDataImplementation(ConnectingPlugin sender, String action, MessageTarget target, R player, byte[] data);
-
-    protected byte[] writeToByteArray(MessageTarget target, ConnectingPlugin sender, String action, byte[] data) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(target.name());
-        out.writeUTF(sender.getName());
-        out.writeUTF(action);
-        out.writeShort(data.length);
-        out.write(data);
-        return out.toByteArray();
+    @Deprecated
+    protected void sendDataImplementation(ConnectingPlugin sender, String action, MessageTarget target, R player, byte[] data) {
+        sendDataImplementation(player, new Message(target, sender.getName(), action, data));
     }
+
+    protected abstract void sendDataImplementation(R player, Message message);
+
+    protected abstract R getReceiver(String name);
 
     /**
      * Register a handler for a certain action
@@ -114,4 +109,6 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
     public Map<String, BiConsumer<R, byte[]>> unregisterHandlers(ConnectingPlugin plugin) {
         return handlers.rowMap().remove(plugin.getName().toLowerCase(Locale.ROOT));
     }
+
+    public void close() {};
 }

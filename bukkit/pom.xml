@@ -8,6 +8,7 @@
         <groupId>de.themoep.connectorplugin</groupId>
         <artifactId>parent</artifactId>
         <version>parent</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>bukkit</artifactId>

@@ -1,0 +1,11 @@
+# Currently supported types:
+# - "plugin_messages" (will not be able to send messages to servers without any players online, messages will be queued)
+# - "redis" (does not require any online players)
+messenger-type: plugin_messages
+
+# Redis messenger settings
+redis:
+  host: localhost
+  port: 6379
+  timeout: 60
+  password: password1

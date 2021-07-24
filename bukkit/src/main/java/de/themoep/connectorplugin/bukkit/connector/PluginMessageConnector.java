@@ -19,10 +19,12 @@ package de.themoep.connectorplugin.bukkit.connector;
  */
 
 import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import de.themoep.connectorplugin.connector.Message;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import de.themoep.connectorplugin.bukkit.BukkitConnectorPlugin;
-import de.themoep.connectorplugin.connector.ConnectingPlugin;
+import de.themoep.connectorplugin.connector.VersionMismatchException;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -32,6 +34,7 @@ import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.logging.Level;
 
 public class PluginMessageConnector extends BukkitConnector implements PluginMessageListener, Listener {
 
@@ -45,40 +48,50 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
     }
 
     @Override
-    public void onPluginMessageReceived(String channel, Player player, byte[] message) {
+    public void onPluginMessageReceived(String channel, Player player, byte[] data) {
         if (!channel.equals(plugin.getMessageChannel())) {
             return;
         }
 
-        ByteArrayDataInput in = ByteStreams.newDataInput(message);
-        try {
-            MessageTarget target = MessageTarget.valueOf(in.readUTF());
-            String senderPlugin = in.readUTF();
-            String action = in.readUTF();
-            short length = in.readShort();
-            byte[] data = new byte[length];
-            in.readFully(data);
+        ByteArrayDataInput in = ByteStreams.newDataInput(data);
+        String group = in.readUTF();
+        if (!group.equals(plugin.getGroup()) && !group.isEmpty()) {
+            return;
+        }
 
-            handle(senderPlugin, action, target, player, data);
+        int messageLength = in.readInt();
+        byte[] messageData = new byte[messageLength];
+        in.readFully(messageData);
+
+        try {
+            handle( player, Message.fromByteArray(messageData));
         } catch (IllegalArgumentException e) {
             plugin.logError("Invalid message target! " + e.getMessage());
+        } catch (VersionMismatchException e) {
+            plugin.getLogger().log(Level.WARNING, e.getMessage() + ". Ignoring message!");
         }
     }
 
     @Override
-    public void sendDataImplementation(ConnectingPlugin sender, String action, MessageTarget target, Player player, byte[] data) {
-        byte[] dataToSend = writeToByteArray(target, sender, action, data);
+    public void sendDataImplementation(Player player, Message message) {
+        byte[] messageData = message.writeToByteArray(plugin);
+
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(plugin.getGroup());
+        out.writeInt(messageData.length);
+        out.write(messageData);
+        byte[] dataToSend = out.toByteArray();
 
         if (player != null) {
             player.sendPluginMessage(plugin, plugin.getMessageChannel(), dataToSend);
-        } else if (target != MessageTarget.PROXY) {
+        } else if (message.getTarget() != MessageTarget.PROXY) {
             if (plugin.getServer().getOnlinePlayers().isEmpty()) {
                 queue.add(dataToSend);
             } else {
                 plugin.getServer().getOnlinePlayers().iterator().next().sendPluginMessage(plugin, plugin.getMessageChannel(), dataToSend);
             }
         } else {
-            plugin.logError("Could not send data to " + target + " as player wasn't specified!");
+            plugin.logError("Could not send data to " + message.getTarget() + " as player wasn't specified!");
         }
     }
 
