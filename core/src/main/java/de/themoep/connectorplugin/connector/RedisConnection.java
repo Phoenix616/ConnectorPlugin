@@ -120,7 +120,7 @@ public class RedisConnection {
         byte[] messageData = message.writeToByteArray(plugin);
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(senderName);
+        out.writeUTF(senderName != null ? senderName : "");
         out.writeUTF(plugin.getGroup());
         out.writeInt(messageData.length);
         out.write(messageData);

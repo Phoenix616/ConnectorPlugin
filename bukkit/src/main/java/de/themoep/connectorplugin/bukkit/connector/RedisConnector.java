@@ -43,7 +43,7 @@ public class RedisConnector extends BukkitConnector {
 
     @Override
     protected void sendDataImplementation(Player player, Message message) {
-        connection.sendMessage(player.getName(), message);
+        connection.sendMessage(player != null ? player.getName() : "", message);
     }
 
     @Override

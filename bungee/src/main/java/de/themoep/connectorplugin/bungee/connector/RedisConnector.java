@@ -43,7 +43,7 @@ public class RedisConnector extends BungeeConnector {
 
     @Override
     protected void sendDataImplementation(ProxiedPlayer player, Message message) {
-        connection.sendMessage(player.getName(), message);
+        connection.sendMessage(player != null ? player.getName() : "", message);
     }
 
     @Override
