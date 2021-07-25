@@ -7,13 +7,12 @@
 
     <groupId>de.themoep.connectorplugin</groupId>
     <artifactId>parent</artifactId>
-    <version>parent</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>${plugin.name}</name>
 
     <properties>
         <plugin.name>ConnectorPlugin</plugin.name>
-        <plugin.version>1.1-SNAPSHOT</plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <build.number>${buildNumber}</build.number>
         <minecraft.plugin.version>${project.version} ${buildDescription}</minecraft.plugin.version>

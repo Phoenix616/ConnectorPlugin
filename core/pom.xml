@@ -5,13 +5,11 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>de.themoep.connectorplugin</groupId>
-        <version>parent</version>
-        <relativePath>../pom.xml</relativePath>
+        <version>1.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>core</artifactId>
-    <version>${plugin.version}</version>
 
     <dependencies>
         <!-- Should be kept in sync with Spigot/Bungee -->
