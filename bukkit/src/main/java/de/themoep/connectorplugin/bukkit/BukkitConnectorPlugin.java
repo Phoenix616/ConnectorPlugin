@@ -43,8 +43,8 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
         group = getConfig().getString("group", "global");
         serverName = getConfig().getString("server-name", "changeme");
         if ("changeme".equals(serverName)) {
-            serverName = new File(".").getAbsoluteFile().getName();
-            getLogger().log(Level.WARNING, "Server name is not configured! Please set it in your plugin config! Using the name of the server directory name instead: " + serverName);
+            serverName = new File(".").getAbsoluteFile().getParentFile().getName();
+            getLogger().log(Level.WARNING, "Server name is not configured! Please set it in your plugin config! Using the name of the server directory instead: " + serverName);
         }
 
         String messengerType = getConfig().getString("messenger-type", "plugin_messages").toLowerCase(Locale.ROOT);
