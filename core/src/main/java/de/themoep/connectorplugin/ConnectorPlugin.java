@@ -43,5 +43,7 @@ public interface ConnectorPlugin {
 
     void logError(String message, Throwable... throwables);
 
+    String getServerName();
+
     String getGroup();
 }

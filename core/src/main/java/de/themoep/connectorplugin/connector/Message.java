@@ -22,14 +22,16 @@ import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.ConnectorPlugin;
 
 public class Message {
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
     private final MessageTarget target;
+    private final String sendingServer;
     private final String sendingPlugin;
     private final String action;
     private final byte[] data;
 
-    public Message(MessageTarget target, String sendingPlugin, String action, byte[] data) {
+    public Message(MessageTarget target, String sendingServer, String sendingPlugin, String action, byte[] data) {
         this.target = target;
+        this.sendingServer = sendingServer;
         this.sendingPlugin = sendingPlugin;
         this.action = action;
         this.data = data;
@@ -37,6 +39,10 @@ public class Message {
 
     public MessageTarget getTarget() {
         return target;
+    }
+
+    public String getSendingServer() {
+        return sendingServer;
     }
 
     public String getSendingPlugin() {
@@ -55,6 +61,7 @@ public class Message {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeInt(VERSION);
         out.writeUTF(target.name());
+        out.writeUTF(sendingServer);
         out.writeUTF(sendingPlugin);
         out.writeUTF(action);
         out.writeInt(data.length);
@@ -69,12 +76,13 @@ public class Message {
             throw new VersionMismatchException(messageVersion, VERSION, "Received an unsupported version " + messageVersion + ", only supporting " + VERSION);
         }
         MessageTarget target = MessageTarget.valueOf(in.readUTF());
+        String senderServer = in.readUTF();
         String senderPlugin = in.readUTF();
         String action = in.readUTF();
         int length = in.readInt();
         byte[] data = new byte[length];
         in.readFully(data);
-        return new Message(target, senderPlugin, action, data);
+        return new Message(target, senderServer, senderPlugin, action, data);
     }
 
 }

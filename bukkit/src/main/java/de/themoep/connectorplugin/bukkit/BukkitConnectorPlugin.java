@@ -85,10 +85,12 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
         getLogger().log(Level.SEVERE, message, throwables.length > 0 ? throwables[0] : null);
     }
 
+    @Override
     public String getGroup() {
         return group;
     }
 
+    @Override
     public String getServerName() {
         return serverName;
     }

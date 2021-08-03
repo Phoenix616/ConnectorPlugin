@@ -28,6 +28,14 @@ public enum MessageTarget {
      */
     ALL_QUEUE,
     /**
+     * Sends to all other servers that have players connected. (So this doesn't queue with plugin messages)
+     */
+    OTHERS_WITH_PLAYERS,
+    /**
+     * Tries to send to all other servers. (With plugin messages it queues if no player is connected to server)
+     */
+    OTHERS_QUEUE,
+    /**
      * Send to the players current server.<br>
      * Requires a player parameter.<br>
      * Can only be sent from a {@link Source#PROXY}

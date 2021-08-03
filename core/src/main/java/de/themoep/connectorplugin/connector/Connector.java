@@ -36,6 +36,14 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
     }
 
     protected void handle(R receiver, Message message) {
+        switch (message.getTarget()) {
+            case OTHERS_WITH_PLAYERS:
+            case OTHERS_QUEUE:
+                if (message.getSendingServer().equals(plugin.getServerName())) {
+                    return;
+                }
+        }
+
         BiConsumer<R, byte[]> handler = handlers.get(message.getSendingPlugin().toLowerCase(Locale.ROOT), message.getAction());
         if (handler != null) {
             handler.accept(receiver, message.getData());
@@ -68,12 +76,7 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
             throw new UnsupportedOperationException("Cannot send message with target " + target + " from " + plugin.getSourceType());
         }
 
-        sendDataImplementation(sender, action, target, player, data);
-    }
-
-    @Deprecated
-    protected void sendDataImplementation(ConnectingPlugin sender, String action, MessageTarget target, R player, byte[] data) {
-        sendDataImplementation(player, new Message(target, sender.getName(), action, data));
+        sendDataImplementation(player, new Message(target, plugin.getServerName(), sender.getName(), action, data));
     }
 
     protected abstract void sendDataImplementation(R player, Message message);

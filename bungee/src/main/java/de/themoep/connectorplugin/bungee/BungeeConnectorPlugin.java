@@ -84,6 +84,11 @@ public final class BungeeConnectorPlugin extends Plugin implements ConnectorPlug
     }
 
     @Override
+    public String getServerName() {
+        return "bungee:" + getProxy().getConfig().getUuid();
+    }
+
+    @Override
     public String getGroup() {
         return "";
     }

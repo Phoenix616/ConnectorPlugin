@@ -26,6 +26,7 @@ import de.themoep.connectorplugin.bungee.BungeeConnectorPlugin;
 import de.themoep.connectorplugin.connector.VersionMismatchException;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.connection.Server;
 import net.md_5.bungee.api.event.PluginMessageEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
@@ -60,10 +61,16 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
             Message message = Message.fromByteArray(messageData);
             switch (message.getTarget()) {
                 case ALL_WITH_PLAYERS:
-                    sendToAllWithPlayers(event.getData());
+                    sendToAllWithPlayers(event.getData(), null);
                     break;
                 case ALL_QUEUE:
-                    sendToAllAndQueue(event.getData());
+                    sendToAllAndQueue(event.getData(), null);
+                    break;
+                case OTHERS_WITH_PLAYERS:
+                    sendToAllWithPlayers(event.getData(), ((ProxiedPlayer) event.getSender()).getServer());
+                    break;
+                case OTHERS_QUEUE:
+                    sendToAllAndQueue(event.getData(), ((ProxiedPlayer) event.getSender()).getServer());
                     break;
                 case PROXY:
                     handle((ProxiedPlayer) event.getReceiver(), message);
@@ -78,17 +85,19 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
         }
     }
 
-    private void sendToAllWithPlayers(byte[] data) {
-        sendToAll(data, false);
+    private void sendToAllWithPlayers(byte[] data, Server excludedServer) {
+        sendToAll(data, false, excludedServer);
     }
 
-    private void sendToAllAndQueue(byte[] data) {
-        sendToAll(data, true);
+    private void sendToAllAndQueue(byte[] data, Server excludedServer) {
+        sendToAll(data, true, excludedServer);
     }
 
-    private void sendToAll(byte[] data, boolean queue) {
+    private void sendToAll(byte[] data, boolean queue, Server excludedServer) {
         for (ServerInfo server : plugin.getProxy().getServers().values()) {
-            server.sendData(plugin.getMessageChannel(), data, queue);
+            if (excludedServer == null || excludedServer.getInfo() != server) {
+                server.sendData(plugin.getMessageChannel(), data, queue);
+            }
         }
     }
 
@@ -104,10 +113,16 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
 
         switch (message.getTarget()) {
             case ALL_WITH_PLAYERS:
-                sendToAllWithPlayers(dataToSend);
+                sendToAllWithPlayers(dataToSend, null);
                 break;
             case ALL_QUEUE:
-                sendToAllAndQueue(dataToSend);
+                sendToAllAndQueue(dataToSend, null);
+                break;
+            case OTHERS_WITH_PLAYERS:
+                sendToAllWithPlayers(dataToSend, player.getServer());
+                break;
+            case OTHERS_QUEUE:
+                sendToAllAndQueue(dataToSend, player.getServer());
                 break;
             case SERVER:
                 if (player != null) {
