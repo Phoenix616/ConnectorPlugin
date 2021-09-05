@@ -22,14 +22,18 @@ import de.themoep.connectorplugin.ConnectorPlugin;
 import de.themoep.connectorplugin.bukkit.connector.BukkitConnector;
 import de.themoep.connectorplugin.bukkit.connector.PluginMessageConnector;
 import de.themoep.connectorplugin.bukkit.connector.RedisConnector;
+import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import de.themoep.connectorplugin.connector.MessageTarget;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.Locale;
 import java.util.logging.Level;
 
-public final class BukkitConnectorPlugin extends JavaPlugin implements ConnectorPlugin {
+public final class BukkitConnectorPlugin extends JavaPlugin implements ConnectorPlugin, Listener {
 
     private BukkitConnector connector;
     private String group;
@@ -63,6 +67,13 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
     @Override
     public void onDisable() {
         connector.close();
+    }
+
+    @EventHandler
+    public void onPluginDisable(PluginDisableEvent event) {
+        if (event.getPlugin() instanceof ConnectingPlugin) {
+            connector.unregisterHandlers((ConnectingPlugin) event.getPlugin());
+        }
     }
 
     @Override
