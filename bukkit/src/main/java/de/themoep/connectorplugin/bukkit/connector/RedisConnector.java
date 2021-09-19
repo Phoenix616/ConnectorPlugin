@@ -43,7 +43,8 @@ public class RedisConnector extends BukkitConnector {
                                 return;
                             }
                     }
-                    handle(receiver.isEmpty() ? null : getReceiver(receiver), message);
+                    plugin.getServer().getScheduler().runTask(plugin, () ->
+                            handle(receiver.isEmpty() ? null : getReceiver(receiver), message));
                 }
         );
     }
