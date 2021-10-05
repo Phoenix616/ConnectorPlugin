@@ -20,6 +20,7 @@ package de.themoep.connectorplugin.bukkit.connector;
 
 import de.themoep.connectorplugin.bukkit.BukkitConnectorPlugin;
 import de.themoep.connectorplugin.connector.Connector;
+import de.themoep.connectorplugin.connector.Message;
 import org.bukkit.entity.Player;
 
 public abstract class BukkitConnector extends Connector<BukkitConnectorPlugin, Player> {
@@ -30,6 +31,18 @@ public abstract class BukkitConnector extends Connector<BukkitConnectorPlugin, P
 
     protected Player getReceiver(String name) {
         return plugin.getServer().getPlayer(name);
+    }
+
+    @Override
+    protected void handle(Player receiver, Message message) {
+        switch (message.getTarget()) {
+            case OTHERS_WITH_PLAYERS:
+            case ALL_WITH_PLAYERS:
+                if (plugin.getServer().getOnlinePlayers().isEmpty()) {
+                    return;
+                }
+        }
+        super.handle(receiver, message);
     }
 
 }

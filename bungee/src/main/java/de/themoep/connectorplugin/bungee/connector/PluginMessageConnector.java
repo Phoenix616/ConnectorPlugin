@@ -73,6 +73,7 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
                     sendToAllAndQueue(event.getData(), ((ProxiedPlayer) event.getSender()).getServer());
                     break;
                 case PROXY:
+                case ALL_PROXIES:
                     handle((ProxiedPlayer) event.getReceiver(), message);
                     break;
                 default:

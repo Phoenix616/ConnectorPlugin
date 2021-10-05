@@ -19,6 +19,7 @@ package de.themoep.connectorplugin.bukkit;
  */
 
 import de.themoep.connectorplugin.ConnectorPlugin;
+import de.themoep.connectorplugin.bukkit.commands.ConnectorCommand;
 import de.themoep.connectorplugin.bukkit.connector.BukkitConnector;
 import de.themoep.connectorplugin.bukkit.connector.PluginMessageConnector;
 import de.themoep.connectorplugin.bukkit.connector.RedisConnector;
@@ -36,6 +37,7 @@ import java.util.logging.Level;
 public final class BukkitConnectorPlugin extends JavaPlugin implements ConnectorPlugin, Listener {
 
     private BukkitConnector connector;
+    private Bridge bridge;
     private boolean debug = true;
     private String group;
     private String serverName;
@@ -44,6 +46,8 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
     public void onEnable() {
         saveDefaultConfig();
         reloadConfig();
+
+        getCommand("connectorplugin").setExecutor(new ConnectorCommand(this));
 
         debug = getConfig().getBoolean("debug");
         group = getConfig().getString("group", "global");
@@ -64,6 +68,8 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
                 connector = new RedisConnector(this);
                 break;
         }
+
+        bridge = new Bridge(this);
     }
 
     @Override
@@ -78,14 +84,22 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
         }
     }
 
+    /**
+     * Get the bridge helper class for executing certain actions on the proxy and other servers
+     * @return The bridge helper
+     */
+    public Bridge getBridge() {
+        return bridge;
+    }
+
     @Override
     public BukkitConnector getConnector() {
         return connector;
     }
 
     @Override
-    public MessageTarget.Source getSourceType() {
-        return MessageTarget.Source.SERVER;
+    public MessageTarget.Type getSourceType() {
+        return MessageTarget.Type.SERVER;
     }
 
     @Override

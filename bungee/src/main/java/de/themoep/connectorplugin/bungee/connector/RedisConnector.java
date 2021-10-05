@@ -20,7 +20,6 @@ package de.themoep.connectorplugin.bungee.connector;
 
 import de.themoep.connectorplugin.bungee.BungeeConnectorPlugin;
 import de.themoep.connectorplugin.connector.Message;
-import de.themoep.connectorplugin.connector.MessageTarget;
 import de.themoep.connectorplugin.connector.RedisConnection;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 
@@ -36,11 +35,7 @@ public class RedisConnector extends BungeeConnector {
                 plugin.getConfig().getInt("redis.port"),
                 plugin.getConfig().getString("redis.password"),
                 plugin.getConfig().getLong("redis.timeout"),
-                (receiver, message) -> {
-                    if (message.getTarget() == MessageTarget.PROXY) {
-                        handle(receiver.isEmpty() ? null : getReceiver(receiver), message);
-                    }
-                }
+                (receiver, message) -> handle(receiver.isEmpty() ? null : getReceiver(receiver), message)
         );
     }
 

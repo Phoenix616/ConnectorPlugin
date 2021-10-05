@@ -22,47 +22,65 @@ public enum MessageTarget {
     /**
      * Sends to all servers that have players connected. (So this doesn't queue with plugin messages)
      */
-    ALL_WITH_PLAYERS,
+    ALL_WITH_PLAYERS(Type.SERVER),
     /**
      * Tries to send to all servers. (With plugin messages it queues if no player is connected to server)
      */
-    ALL_QUEUE,
+    ALL_QUEUE(Type.SERVER),
     /**
      * Sends to all other servers that have players connected. (So this doesn't queue with plugin messages)
      */
-    OTHERS_WITH_PLAYERS,
+    OTHERS_WITH_PLAYERS(Type.SERVER),
     /**
      * Tries to send to all other servers. (With plugin messages it queues if no player is connected to server)
      */
-    OTHERS_QUEUE,
+    OTHERS_QUEUE(Type.SERVER),
     /**
      * Send to the players current server.<br>
      * Requires a player parameter.<br>
-     * Can only be sent from a {@link Source#PROXY}
+     * Can only be sent from a {@link Type#PROXY}
      */
-    SERVER(Source.PROXY),
+    SERVER(Type.SERVER, Type.PROXY),
     /**
      * Send to the players current proxy.<br>
      * Requires a player parameter.<br>
-     * Can only be sent from a {@link Source#SERVER}
+     * Can only be sent from a {@link Type#SERVER}
      */
-    PROXY(Source.SERVER);
+    PROXY(Type.PROXY, Type.SERVER),
+    /**
+     * Send to all connected proxies
+     */
+    ALL_PROXIES(Type.PROXY),
+    /**
+     * Send to all proxies that aren't the current proxy
+     */
+    OTHER_PROXIES(Type.PROXY, Type.PROXY);
 
-    private final Source source;
+    private final Type type;
+    private final Type source;
 
     MessageTarget() {
-        source = null;
+        this(null, null);
     }
 
-    MessageTarget(Source source) {
+    MessageTarget(Type type) {
+        this(type, null);
+    }
+
+    MessageTarget(Type type, Type source) {
+        this.type = type;
         this.source = source;
     }
 
-    public Source getSource() {
+    public Type getType() {
+        return type;
+    }
+
+    public Type getSource() {
         return source;
     }
 
-    public enum Source {
+    public enum Type {
         PROXY,
         SERVER
     }

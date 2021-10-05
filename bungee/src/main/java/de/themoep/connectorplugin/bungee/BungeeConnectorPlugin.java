@@ -18,35 +18,30 @@ package de.themoep.connectorplugin.bungee;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import de.themoep.bungeeplugin.BungeePlugin;
 import de.themoep.bungeeplugin.FileConfiguration;
+import de.themoep.bungeeplugin.PluginCommand;
 import de.themoep.connectorplugin.ConnectorPlugin;
 import de.themoep.connectorplugin.bungee.connector.BungeeConnector;
 import de.themoep.connectorplugin.bungee.connector.PluginMessageConnector;
 import de.themoep.connectorplugin.bungee.connector.RedisConnector;
 import de.themoep.connectorplugin.connector.MessageTarget;
-import net.md_5.bungee.api.plugin.Plugin;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Locale;
 import java.util.logging.Level;
 
-public final class BungeeConnectorPlugin extends Plugin implements ConnectorPlugin {
+public final class BungeeConnectorPlugin extends BungeePlugin implements ConnectorPlugin {
 
     private BungeeConnector connector;
-    private FileConfiguration config;
+    private Bridge bridge;
     private boolean debug = true;
 
     @Override
     public void onEnable() {
         connector = new PluginMessageConnector(this);
-        try {
-            config = new FileConfiguration(this, new File(this.getDataFolder(), "config.yml"), "bungee-config.yml");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        debug = config.getBoolean("debug");
+
+        debug = getConfig().getBoolean("debug");
 
         String messengerType = getConfig().getString("messenger-type", "plugin_messages").toLowerCase(Locale.ROOT);
         switch (messengerType) {
@@ -59,6 +54,8 @@ public final class BungeeConnectorPlugin extends Plugin implements ConnectorPlug
                 connector = new RedisConnector(this);
                 break;
         }
+
+        bridge = new Bridge(this);
     }
 
     @Override
@@ -71,9 +68,17 @@ public final class BungeeConnectorPlugin extends Plugin implements ConnectorPlug
         return connector;
     }
 
+    /**
+     * Get the bridge helper class for executing certain actions on other servers
+     * @return The bridge helper
+     */
+    public Bridge getBridge() {
+        return bridge;
+    }
+
     @Override
-    public MessageTarget.Source getSourceType() {
-        return MessageTarget.Source.PROXY;
+    public MessageTarget.Type getSourceType() {
+        return MessageTarget.Type.PROXY;
     }
 
     @Override
@@ -95,7 +100,7 @@ public final class BungeeConnectorPlugin extends Plugin implements ConnectorPlug
 
     @Override
     public String getServerName() {
-        return "bungee:" + getProxy().getConfig().getUuid();
+        return "proxy:" + getProxy().getConfig().getUuid();
     }
 
     @Override
@@ -103,7 +108,8 @@ public final class BungeeConnectorPlugin extends Plugin implements ConnectorPlug
         return "";
     }
 
-    public FileConfiguration getConfig() {
-        return config;
+    @Override
+    public String getName() {
+        return getDescription().getName();
     }
 }

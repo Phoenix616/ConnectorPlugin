@@ -35,19 +35,8 @@ public class RedisConnector extends BukkitConnector {
                 plugin.getConfig().getInt("redis.port"),
                 plugin.getConfig().getString("redis.password"),
                 plugin.getConfig().getLong("redis.timeout"),
-                (receiver, message) -> {
-                    switch (message.getTarget()) {
-                        case OTHERS_WITH_PLAYERS:
-                        case ALL_WITH_PLAYERS:
-                            if (plugin.getServer().getOnlinePlayers().isEmpty()) {
-                                return;
-                            }
-                        case PROXY:
-                            return;
-                    }
-                    plugin.getServer().getScheduler().runTask(plugin, () ->
-                            handle(receiver.isEmpty() ? null : getReceiver(receiver), message));
-                }
+                (receiver, message) -> plugin.getServer().getScheduler().runTask(plugin, () ->
+                        handle(receiver.isEmpty() ? null : getReceiver(receiver), message))
         );
     }
 

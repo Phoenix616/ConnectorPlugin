@@ -4,7 +4,8 @@ Plugin to simplify communication between multiple Minecraft servers in a network
 
 This (currently) does nothing on its own, it is meant to be depended on by other plugins so they can easily send data between servers without having to implement that logic themselves.
 
-## Planed Features
+## Features
+- [x] Send commands to other servers and proxies
 - [ ] Server-side command registration
 - [ ] Location/server state querying
 - [ ] Teleporting
@@ -16,6 +17,40 @@ This (currently) does nothing on its own, it is meant to be depended on by other
 - [ ] peer-to-peer
 - [x] redis pub sub
 - [ ] RabbitMQ
+
+## Commands
+
+Main command on the Minecraft server:
+
+`/connectorplugin`
+- *Permission:* `connectorplugin.command`
+- *Aliases:* `connector`, `connectorcommand`, `connplugin`, `cp`
+- Subcommands:
+  - `servercommand <server> <command>...`
+    - *Permission:* `connectorplugin.command.servercommand`
+    - *Aliases:* `serverconsole`, `serverconsolecommand`, `server`, `scc`
+  - `proxycommand <command>...`
+    - *Permission:* `connectorplugin.command.proxycommand`
+    - *Aliases:* `proxyconsole`, `proxyconsolecommand`, `proxy`, `pcc`
+  - `proxyplayercommand <player> <command>...`
+    - *Permission:* `connectorplugin.command.proxyplayercommand`
+    - *Aliases:* `proxyplayer`, `player`, `ppc`
+
+Main command on the bungee proxy:
+
+`/connectorpluginbungee`
+- *Permission:* `connectorplugin.command`
+- *Aliases:* `connectorbungee`, `connectorcommandbungee`, `connpluginbungee`, `cpb`
+- Subcommands:
+  - `servercommand <server> <command>...`
+    - *Permission:* `connectorplugin.command.servercommand`
+    - *Aliases:* `serverconsole`, `serverconsolecommand`, `server`, `scc`
+  - `serverplayercommand <player> <command>...`
+    - *Permission:* `connectorplugin.command.serverplayercommand`
+    - *Aliases:* `serverplayer`, `player`, `spc`
+  - `proxycommand <command>...`
+    - *Permission:* `connectorplugin.command.proxycommand`
+    - *Aliases:* `proxyconsole`, `proxyconsolecommand`, `proxy`, `pcc`
 
 ## Developer Info
 
@@ -38,7 +73,7 @@ Check [the wiki](https://wiki.phoenix616.dev/plugin:connectorplugin:usage:start)
 <dependency>
     <groupId>de.themoep.connectorplugin</groupId>
     <artifactId>[bukkit|bungee]</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.3-SNAPSHOT</version>
     <scope>provided</scope>
 </dependency>
 ```

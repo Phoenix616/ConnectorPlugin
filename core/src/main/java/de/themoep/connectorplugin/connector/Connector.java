@@ -36,9 +36,14 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
     }
 
     protected void handle(R receiver, Message message) {
+        if (message.getTarget().getType() != plugin.getSourceType()) {
+            return;
+        }
+
         switch (message.getTarget()) {
             case OTHERS_WITH_PLAYERS:
             case OTHERS_QUEUE:
+            case OTHER_PROXIES:
                 if (message.getSendingServer().equals(plugin.getServerName())) {
                     return;
                 }

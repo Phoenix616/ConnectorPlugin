@@ -3,3 +3,13 @@ version: ${minecraft.plugin.version}
 main: de.themoep.connectorplugin.bukkit.BukkitConnectorPlugin
 api-version: 1.13
 authors: [Phoenix616]
+commands:
+  connectorplugin:
+    description: Connector plugin command
+    permission: connectorplugin.command
+    usage: /<command> [servercommand <server>|proxyplayercommand <player>|proxycommand] <command...>
+    aliases:
+    - connector
+    - connectorcommand
+    - connplugin
+    - cp

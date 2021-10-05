@@ -2,3 +2,13 @@ name: ConnectorPlugin
 version: ${minecraft.plugin.version}
 main: de.themoep.connectorplugin.bungee.BungeeConnectorPlugin
 author: Phoenix616
+commands:
+  connectorpluginbungee:
+    description: Connector plugin command
+    permission: connectorplugin.command
+    usage: /<command> [servercommand <server>|playercommand <player>] <command...>
+    aliases:
+    - connectorbungee
+    - connectorcommandbungee
+    - connpluginbungee
+    - cpb

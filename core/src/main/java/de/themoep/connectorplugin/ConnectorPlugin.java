@@ -18,10 +18,11 @@ package de.themoep.connectorplugin;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import de.themoep.connectorplugin.connector.Connector;
 import de.themoep.connectorplugin.connector.MessageTarget;
 
-public interface ConnectorPlugin {
+public interface ConnectorPlugin extends ConnectingPlugin {
 
     /**
      * Get the Connector which is used for sending and handling data
@@ -30,10 +31,10 @@ public interface ConnectorPlugin {
     Connector getConnector();
 
     /**
-     * The type of source that this plugin is. {@link MessageTarget.Source#SERVER} or {@link MessageTarget.Source#PROXY}
-     * @return The type of {@link MessageTarget.Source} that this implementation provides.
+     * The type of source that this plugin is. {@link MessageTarget.Type#SERVER} or {@link MessageTarget.Type#PROXY}
+     * @return The type of {@link MessageTarget.Type} that this implementation provides.
      */
-    MessageTarget.Source getSourceType();
+    MessageTarget.Type getSourceType();
 
     default String getMessageChannel() {
         return "bbc:connection";
