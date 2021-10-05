@@ -42,6 +42,13 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
                 if (message.getSendingServer().equals(plugin.getServerName())) {
                     return;
                 }
+                break;
+            case PROXY:
+            case SERVER:
+                if (receiver == null) {
+                    return;
+                }
+                break;
         }
 
         BiConsumer<R, byte[]> handler = handlers.get(message.getSendingPlugin().toLowerCase(Locale.ROOT), message.getAction());
