@@ -1,3 +1,6 @@
+# Plugin debugging
+debug: true
+
 # Currently supported types:
 # - "plugin_messages" (will not be able to send messages to servers without any players online, messages will be queued)
 # - "redis" (does not require any online players)

@@ -39,6 +39,8 @@ public interface ConnectorPlugin {
         return "bbc:connection";
     }
 
+    void logDebug(String message, Throwable... throwables);
+
     void logWarning(String message, Throwable... throwables);
 
     void logError(String message, Throwable... throwables);

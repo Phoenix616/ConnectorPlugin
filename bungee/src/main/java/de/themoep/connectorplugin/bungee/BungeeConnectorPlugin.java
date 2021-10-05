@@ -35,6 +35,7 @@ public final class BungeeConnectorPlugin extends Plugin implements ConnectorPlug
 
     private BungeeConnector connector;
     private FileConfiguration config;
+    private boolean debug = true;
 
     @Override
     public void onEnable() {
@@ -44,6 +45,8 @@ public final class BungeeConnectorPlugin extends Plugin implements ConnectorPlug
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        debug = config.getBoolean("debug");
 
         String messengerType = getConfig().getString("messenger-type", "plugin_messages").toLowerCase(Locale.ROOT);
         switch (messengerType) {
@@ -71,6 +74,13 @@ public final class BungeeConnectorPlugin extends Plugin implements ConnectorPlug
     @Override
     public MessageTarget.Source getSourceType() {
         return MessageTarget.Source.PROXY;
+    }
+
+    @Override
+    public void logDebug(String message, Throwable... throwables) {
+        if (debug) {
+            getLogger().log(Level.INFO, "[DEBUG] " + message, throwables.length > 0 ? throwables[0] : null);
+        }
     }
 
     @Override

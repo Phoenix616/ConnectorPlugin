@@ -42,6 +42,8 @@ public class RedisConnector extends BukkitConnector {
                             if (plugin.getServer().getOnlinePlayers().isEmpty()) {
                                 return;
                             }
+                        case PROXY:
+                            return;
                     }
                     plugin.getServer().getScheduler().runTask(plugin, () ->
                             handle(receiver.isEmpty() ? null : getReceiver(receiver), message));

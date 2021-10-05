@@ -48,7 +48,7 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
         if (handler != null) {
             handler.accept(receiver, message.getData());
         } else {
-            plugin.logError("Plugin '" + message.getSendingPlugin() + " did not register an action '" + message.getAction() + "' but we received data with target '" + message.getTarget() + "' by " + receiver);
+            plugin.logDebug("Plugin '" + message.getSendingPlugin() + " did not register an action '" + message.getAction() + "' but we received data with target '" + message.getTarget() + "' by " + receiver);
         }
     }
 

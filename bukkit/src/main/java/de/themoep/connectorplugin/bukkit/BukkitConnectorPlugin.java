@@ -36,6 +36,7 @@ import java.util.logging.Level;
 public final class BukkitConnectorPlugin extends JavaPlugin implements ConnectorPlugin, Listener {
 
     private BukkitConnector connector;
+    private boolean debug = true;
     private String group;
     private String serverName;
 
@@ -44,6 +45,7 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
         saveDefaultConfig();
         reloadConfig();
 
+        debug = getConfig().getBoolean("debug");
         group = getConfig().getString("group", "global");
         serverName = getConfig().getString("server-name", "changeme");
         if ("changeme".equals(serverName)) {
@@ -84,6 +86,13 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
     @Override
     public MessageTarget.Source getSourceType() {
         return MessageTarget.Source.SERVER;
+    }
+
+    @Override
+    public void logDebug(String message, Throwable... throwables) {
+        if (debug) {
+            getLogger().log(Level.INFO, "[DEBUG] " + message, throwables.length > 0 ? throwables[0] : null);
+        }
     }
 
     @Override
