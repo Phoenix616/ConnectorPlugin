@@ -56,6 +56,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
                 return;
             }
 
+            plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + serverName);
             boolean success = plugin.getProxy().getPluginManager().dispatchCommand(player, command);
 
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -69,13 +70,10 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         plugin.getConnector().registerHandler(plugin, Action.CONSOLE_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
-            String targetServer = in.readUTF();
-            if (!targetServer.equals(plugin.getServerName())) {
-                return;
-            }
             long id = in.readLong();
             String command = in.readUTF();
 
+            plugin.logDebug("Console command '" + command + "' triggered from " + senderServer);
             boolean success = plugin.getProxy().getPluginManager().dispatchCommand(new BridgedSender(senderServer, id), command);
 
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -83,7 +81,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
             out.writeLong(id);
             out.writeBoolean(true);
             out.writeBoolean(success);
-            plugin.getConnector().sendData(plugin, Action.COMMAND_RESPONSE, MessageTarget.OTHERS_QUEUE,out.toByteArray());
+            plugin.getConnector().sendData(plugin, Action.COMMAND_RESPONSE, MessageTarget.ALL_QUEUE,out.toByteArray());
         });
 
         plugin.getConnector().registerHandler(plugin, Action.COMMAND_RESPONSE, (receiver, data) -> {

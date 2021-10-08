@@ -75,7 +75,7 @@ public class RedisConnection {
 
                 ByteArrayDataInput in = ByteStreams.newDataInput(data);
                 String group = in.readUTF();
-                if (!group.equals(plugin.getGroup()) && !group.isEmpty()) {
+                if (!group.equals(plugin.getGroup()) && !group.isEmpty() && !plugin.getGroup().isEmpty()) {
                     return;
                 }
 
@@ -120,8 +120,8 @@ public class RedisConnection {
         byte[] messageData = message.writeToByteArray(plugin);
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(senderName != null ? senderName : "");
         out.writeUTF(plugin.getGroup());
+        out.writeUTF(senderName != null ? senderName : "");
         out.writeInt(messageData.length);
         out.write(messageData);
         byte[] dataToSend = out.toByteArray();

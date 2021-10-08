@@ -22,6 +22,8 @@ import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class ServerConsoleCommand extends SubCommand {
@@ -48,9 +50,14 @@ public class ServerConsoleCommand extends SubCommand {
 
     @Override
     public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+        if (!sender.hasPermission(getPermission())) {
+            return Collections.emptySet();
+        }
         if (args.length == 0) {
             return plugin.getProxy().getServers().keySet();
+        } else if (args.length == 1) {
+            return plugin.getProxy().getServers().keySet().stream().filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT))).sorted(String::compareToIgnoreCase).collect(Collectors.toList());
         }
-        return null;
+        return Collections.emptySet();
     }
 }

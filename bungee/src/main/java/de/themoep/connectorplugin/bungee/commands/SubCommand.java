@@ -23,7 +23,9 @@ import net.md_5.bungee.api.CommandSender;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -69,14 +71,28 @@ public class SubCommand extends PluginCommand<BungeeConnectorPlugin> {
 
     @Override
     public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
-        if (args.length == 0) {
+        if (!sender.hasPermission(getPermission())) {
+            return Collections.emptySet();
+        }
+        if (args.length == 0 || args[0].isEmpty()) {
             return new ArrayList<>(subCommands.keySet());
         }
         SubCommand subCommand = getSubCommand(args[0]);
-        if (subCommand != null) {
+        if (subCommand != null && sender.hasPermission(subCommand.getPermission())) {
             return subCommand.onTabComplete(sender, Arrays.copyOfRange(args, 1, args.length));
         }
-        return null;
+        List<String> completions = new ArrayList<>();
+        for (Map.Entry<String, SubCommand> e : subCommands.entrySet()) {
+            if (e.getKey().startsWith(args[0].toLowerCase(Locale.ROOT)) && sender.hasPermission(e.getValue().getPermission())) {
+                completions.add(e.getKey());
+            }
+        }
+        for (Map.Entry<String, SubCommand> e : subCommandAliases.entrySet()) {
+            if (e.getKey().startsWith(args[0].toLowerCase(Locale.ROOT)) && sender.hasPermission(e.getValue().getPermission())) {
+                completions.add(e.getKey());
+            }
+        }
+        return completions;
     }
 
     public Map<String, SubCommand> getSubCommands() {

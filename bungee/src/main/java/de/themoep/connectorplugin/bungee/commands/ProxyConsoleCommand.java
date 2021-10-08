@@ -21,7 +21,7 @@ package de.themoep.connectorplugin.bungee.commands;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 
-import java.util.List;
+import java.util.Collections;
 
 public class ProxyConsoleCommand extends SubCommand {
 
@@ -42,7 +42,7 @@ public class ProxyConsoleCommand extends SubCommand {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, String[] args) {
-        return null;
+    public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+        return Collections.emptySet();
     }
 }

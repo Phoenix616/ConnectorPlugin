@@ -61,6 +61,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> {
                 return;
             }
 
+            plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + serverName);
             boolean success = plugin.getServer().dispatchCommand(player, command);
 
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -81,6 +82,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> {
             long id = in.readLong();
             String command = in.readUTF();
 
+            plugin.logDebug("Console command '" + command + "' triggered from " + senderServer);
             boolean success = plugin.getServer().dispatchCommand(new BridgedSender(senderServer, id), command);
 
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -290,12 +292,12 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> {
 
         @Override
         public boolean hasPermission(String name) {
-            return false;
+            return true;
         }
 
         @Override
         public boolean hasPermission(Permission perm) {
-            return false;
+            return true;
         }
 
         @Override

@@ -43,7 +43,7 @@ public abstract class SubCommand implements TabExecutor {
         this.plugin = plugin;
         String[] usageParts = usage.split(" ", 2);
         this.name = usageParts[0];
-        this.usage = usageParts[1];
+        this.usage = usageParts.length > 1 ? usageParts[1] : "";
         this.permission = permission;
         this.aliases = aliases;
     }
@@ -70,11 +70,13 @@ public abstract class SubCommand implements TabExecutor {
         }
         SubCommand subCommand = getSubCommand(args[0]);
         if (subCommand != null) {
-            if (subCommand.onCommand(sender, command, label, Arrays.copyOfRange(args, 1, args.length))) {
-                return true;
-            } else if (!subCommand.getUsage().isEmpty()) {
-                sender.sendMessage("Usage: /" + label + " " + subCommand.getUsage());
-                return true;
+            if (sender.hasPermission(subCommand.getPermission())) {
+                if (subCommand.onCommand(sender, command, label, Arrays.copyOfRange(args, 1, args.length))) {
+                    return true;
+                } else if (!subCommand.getUsage().isEmpty()) {
+                    sender.sendMessage("Usage: /" + label + " " + subCommand.getUsage());
+                    return true;
+                }
             }
         }
         return false;
@@ -82,14 +84,25 @@ public abstract class SubCommand implements TabExecutor {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length == 0) {
+        if (args.length == 0 || args[0].isEmpty()) {
             return new ArrayList<>(subCommands.keySet());
         }
         SubCommand subCommand = getSubCommand(args[0]);
-        if (subCommand != null) {
+        if (subCommand != null && sender.hasPermission(subCommand.getPermission())) {
             return subCommand.onTabComplete(sender, command, label, Arrays.copyOfRange(args, 1, args.length));
         }
-        return null;
+        List<String> completions = new ArrayList<>();
+        for (Map.Entry<String, SubCommand> e : subCommands.entrySet()) {
+            if (e.getKey().startsWith(args[0].toLowerCase(Locale.ROOT)) && sender.hasPermission(e.getValue().getPermission())) {
+                completions.add(e.getKey());
+            }
+        }
+        for (Map.Entry<String, SubCommand> e : subCommandAliases.entrySet()) {
+            if (e.getKey().startsWith(args[0].toLowerCase(Locale.ROOT)) && sender.hasPermission(e.getValue().getPermission())) {
+                completions.add(e.getKey());
+            }
+        }
+        return completions;
     }
 
     public String getName() {

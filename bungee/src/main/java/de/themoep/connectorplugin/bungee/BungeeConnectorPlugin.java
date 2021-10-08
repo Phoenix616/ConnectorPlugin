@@ -19,9 +19,8 @@ package de.themoep.connectorplugin.bungee;
  */
 
 import de.themoep.bungeeplugin.BungeePlugin;
-import de.themoep.bungeeplugin.FileConfiguration;
-import de.themoep.bungeeplugin.PluginCommand;
 import de.themoep.connectorplugin.ConnectorPlugin;
+import de.themoep.connectorplugin.bungee.commands.ConnectorCommand;
 import de.themoep.connectorplugin.bungee.connector.BungeeConnector;
 import de.themoep.connectorplugin.bungee.connector.PluginMessageConnector;
 import de.themoep.connectorplugin.bungee.connector.RedisConnector;
@@ -40,6 +39,7 @@ public final class BungeeConnectorPlugin extends BungeePlugin implements Connect
     public void onEnable() {
         connector = new PluginMessageConnector(this);
 
+        getProxy().getPluginManager().registerCommand(this, new ConnectorCommand(this));
 
         debug = getConfig().getBoolean("debug");
 
