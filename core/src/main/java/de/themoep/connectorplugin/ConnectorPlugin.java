@@ -49,4 +49,6 @@ public interface ConnectorPlugin extends ConnectingPlugin {
     String getServerName();
 
     String getGroup();
+
+    void runAsync(Runnable runnable);
 }

@@ -12,3 +12,10 @@ redis:
   port: 6379
   timeout: 60
   password: password1
+  
+# Mqtt messenger settings
+mqtt:
+  broker-uri: tcp://localhost:1883
+  keep-alive: 30
+  username: mqttuser
+  password: password1

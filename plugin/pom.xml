@@ -37,6 +37,12 @@
             <version>${library.lettuce.version}</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.paho</groupId>
+            <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
+            <version>${library.paho.version}</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -53,6 +59,23 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>bundle.properties</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>*.png</exclude>
+                                        <exclude>*.html</exclude>
+                                        <exclude>*.jpeg</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
                     </execution>
                 </executions>
                 <configuration>
@@ -76,6 +99,10 @@
                         <relocation>
                             <pattern>org.reactivestreams</pattern>
                             <shadedPattern>de.themoep.connectorplugin.lib.reactivestreams</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.eclipse.paho</pattern>
+                            <shadedPattern>de.themoep.connectorplugin.lib.paho</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>

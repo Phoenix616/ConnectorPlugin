@@ -22,6 +22,7 @@ import de.themoep.bungeeplugin.BungeePlugin;
 import de.themoep.connectorplugin.ConnectorPlugin;
 import de.themoep.connectorplugin.bungee.commands.ConnectorCommand;
 import de.themoep.connectorplugin.bungee.connector.BungeeConnector;
+import de.themoep.connectorplugin.bungee.connector.MqttConnector;
 import de.themoep.connectorplugin.bungee.connector.PluginMessageConnector;
 import de.themoep.connectorplugin.bungee.connector.RedisConnector;
 import de.themoep.connectorplugin.connector.MessageTarget;
@@ -39,8 +40,6 @@ public final class BungeeConnectorPlugin extends BungeePlugin implements Connect
     public void onEnable() {
         connector = new PluginMessageConnector(this);
 
-        getProxy().getPluginManager().registerCommand(this, new ConnectorCommand(this));
-
         debug = getConfig().getBoolean("debug");
 
         String messengerType = getConfig().getString("messenger-type", "plugin_messages").toLowerCase(Locale.ROOT);
@@ -53,7 +52,12 @@ public final class BungeeConnectorPlugin extends BungeePlugin implements Connect
             case "redis":
                 connector = new RedisConnector(this);
                 break;
+            case "mqtt":
+                connector = new MqttConnector(this);
+                break;
         }
+
+        getProxy().getPluginManager().registerCommand(this, new ConnectorCommand(this));
 
         bridge = new Bridge(this);
     }
@@ -74,6 +78,11 @@ public final class BungeeConnectorPlugin extends BungeePlugin implements Connect
      */
     public Bridge getBridge() {
         return bridge;
+    }
+
+    @Override
+    public void runAsync(Runnable runnable) {
+        getProxy().getScheduler().runAsync(this, runnable);
     }
 
     @Override

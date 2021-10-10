@@ -25,6 +25,12 @@
             <version>${library.lettuce.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.paho</groupId>
+            <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
+            <version>${library.paho.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
 

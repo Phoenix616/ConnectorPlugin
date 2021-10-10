@@ -17,7 +17,7 @@ This includes a bridging utility and some basic commands to use the provided utl
 - [x] Plugin Messages
 - [ ] peer-to-peer
 - [x] redis pub sub
-- [ ] RabbitMQ
+- [x] MQTT (E.g. with RabbitMQ)
 
 ## Commands
 

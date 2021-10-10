@@ -21,6 +21,7 @@ package de.themoep.connectorplugin.bukkit;
 import de.themoep.connectorplugin.ConnectorPlugin;
 import de.themoep.connectorplugin.bukkit.commands.ConnectorCommand;
 import de.themoep.connectorplugin.bukkit.connector.BukkitConnector;
+import de.themoep.connectorplugin.bukkit.connector.MqttConnector;
 import de.themoep.connectorplugin.bukkit.connector.PluginMessageConnector;
 import de.themoep.connectorplugin.bukkit.connector.RedisConnector;
 import de.themoep.connectorplugin.connector.ConnectingPlugin;
@@ -47,8 +48,6 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
         saveDefaultConfig();
         reloadConfig();
 
-        getCommand("connectorplugin").setExecutor(new ConnectorCommand(this));
-
         debug = getConfig().getBoolean("debug");
         group = getConfig().getString("group", "global");
         serverName = getConfig().getString("server-name", "changeme");
@@ -67,7 +66,12 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
             case "redis":
                 connector = new RedisConnector(this);
                 break;
+            case "mqtt":
+                connector = new MqttConnector(this);
+                break;
         }
+
+        getCommand("connectorplugin").setExecutor(new ConnectorCommand(this));
 
         bridge = new Bridge(this);
     }
@@ -95,6 +99,11 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
     @Override
     public BukkitConnector getConnector() {
         return connector;
+    }
+
+    @Override
+    public void runAsync(Runnable runnable) {
+        getServer().getScheduler().runTaskAsynchronously(this, runnable);
     }
 
     @Override
