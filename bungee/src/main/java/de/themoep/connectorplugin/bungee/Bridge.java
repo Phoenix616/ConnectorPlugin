@@ -22,10 +22,12 @@ import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.BridgeCommon;
+import de.themoep.connectorplugin.LocationInfo;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.util.Collection;
@@ -38,6 +40,53 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
 
     public Bridge(BungeeConnectorPlugin plugin) {
         super(plugin);
+
+        plugin.getConnector().registerHandler(plugin, Action.SEND_TO_SERVER, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+            String targetServer = in.readUTF();
+
+            ProxiedPlayer player = plugin.getProxy().getPlayer(playerName);
+            if (player == null) {
+                plugin.logDebug("Could not find player " + playerName + " on this proxy to send to server " + targetServer);
+                sendResponse(senderServer, id, false, "Could not find player " + playerName + " on this proxy to send to server " + targetServer);
+                return;
+            }
+
+            ServerInfo server = plugin.getProxy().getServerInfo(targetServer);
+            if (server == null) {
+                plugin.logDebug("Could not find server " + targetServer + " on this proxy to send player " + playerName + " to");
+                sendResponse(senderServer, id, false, "Could not find server " + targetServer + " on this proxy to send player " + playerName + " to");
+                return;
+            }
+
+            if (!player.getServer().getInfo().equals(server)) {
+                plugin.logDebug("Sending '" + playerName + "' to server '" + targetServer + "'. Triggered from " + senderServer);
+
+                player.connect(server, (success, ex) -> {
+                    sendResponse(senderServer, id, success);
+                    if (ex != null) {
+                        sendResponseMessage(senderServer, id, ex.getMessage());
+                    }
+                });
+            } else {
+                plugin.logDebug("Player '" + playerName + "' is already on server '" + targetServer + "'! Triggered from " + senderServer);
+                sendResponse(senderServer, id, true, playerName + " is already connected to server " + targetServer);
+            }
+        });
+
+        plugin.getConnector().registerHandler(plugin, Action.TELEPORT, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+            LocationInfo targetLocation = LocationInfo.read(in);
+
+            teleport(playerName, targetLocation, messages -> sendResponseMessage(senderServer, id, messages))
+                    .thenAccept(success -> sendResponse(senderServer, id, success));
+        });
 
         plugin.getConnector().registerHandler(plugin, Action.PLAYER_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
@@ -53,18 +102,14 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
             }
             if (player == null) {
                 plugin.logDebug("Could not find player " + playerName + "/" + playerId + " on this proxy to execute command " + command);
+                sendResponse(serverName, id, false, "Could not find player " + playerName + "/" + playerId + " on this proxy to execute command " + command);
                 return;
             }
 
             plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + serverName);
             boolean success = plugin.getProxy().getPluginManager().dispatchCommand(player, command);
 
-            ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            out.writeUTF(serverName);
-            out.writeLong(id);
-            out.writeBoolean(true);
-            out.writeBoolean(success);
-            plugin.getConnector().sendData(plugin, Action.COMMAND_RESPONSE, MessageTarget.SERVER, player, out.toByteArray());
+            sendResponse(serverName, id, player, success);
         });
 
         plugin.getConnector().registerHandler(plugin, Action.CONSOLE_COMMAND, (receiver, data) -> {
@@ -76,15 +121,10 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
             plugin.logDebug("Console command '" + command + "' triggered from " + senderServer);
             boolean success = plugin.getProxy().getPluginManager().dispatchCommand(new BridgedSender(senderServer, id), command);
 
-            ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            out.writeUTF(senderServer);
-            out.writeLong(id);
-            out.writeBoolean(true);
-            out.writeBoolean(success);
-            plugin.getConnector().sendData(plugin, Action.COMMAND_RESPONSE, MessageTarget.ALL_QUEUE,out.toByteArray());
+            sendResponse(senderServer, id, success);
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.COMMAND_RESPONSE, (receiver, data) -> {
+        plugin.getConnector().registerHandler(plugin, Action.RESPONSE, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String serverName = in.readUTF();
             if (!serverName.equals(plugin.getServerName())) {
@@ -110,6 +150,97 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
                 }
             }
         });
+    }
+
+    private void sendResponse(String server, long id, ProxiedPlayer player, boolean success, String... messages) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(server);
+        out.writeLong(id);
+        out.writeBoolean(true);
+        out.writeBoolean(success);
+        plugin.getConnector().sendData(plugin, Action.RESPONSE, MessageTarget.SERVER, player, out.toByteArray());
+
+        if (messages.length > 0) {
+            sendResponseMessage(server, id, messages);
+        }
+    }
+
+    private void sendResponse(String server, long id, boolean success, String... messages) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(server);
+        out.writeLong(id);
+        out.writeBoolean(true);
+        out.writeBoolean(success);
+        plugin.getConnector().sendData(plugin, Action.RESPONSE, server.startsWith("proxy:") ? MessageTarget.OTHER_PROXIES : MessageTarget.ALL_QUEUE, out.toByteArray());
+
+        if (messages.length > 0) {
+            sendResponseMessage(server, id, messages);
+        }
+    }
+
+    private void sendResponseMessage(String server, long id, String... messages) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(server);
+        out.writeLong(id);
+        out.writeBoolean(false);
+        out.writeUTF(String.join("\n", messages));
+        plugin.getConnector().sendData(plugin, Action.RESPONSE, server.startsWith("proxy:") ? MessageTarget.OTHER_PROXIES : MessageTarget.ALL_QUEUE, out.toByteArray());
+    }
+
+    /**
+     * Teleport a player to a certain location in the network
+     * @param playerName    The name of the player to teleport
+     * @param location      The location to teleport to
+     * @param consumer      Details about the teleport
+     * @return A future about whether the player could be teleported
+     */
+    public CompletableFuture<Boolean> teleport(String playerName, LocationInfo location, Consumer<String>... consumer) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+
+        ProxiedPlayer player = plugin.getProxy().getPlayer(playerName);
+        if (player == null) {
+            plugin.logDebug("Could not find player " + playerName + " on this proxy to send to teleport to " + location);
+            future.complete(false);
+            for (Consumer<String> c : consumer) {
+                c.accept("Could not find player " + playerName + " on this proxy to teleport to " + location);
+            }
+            return future;
+        }
+
+        ServerInfo server = plugin.getProxy().getServerInfo(location.getServer());
+        if (server == null) {
+            plugin.logDebug("Could not find server " + location.getServer() + " on this proxy to teleport player " + playerName + " to");
+            future.complete(false);
+            for (Consumer<String> c : consumer) {
+                c.accept("Could not find server " + location.getServer() + " on this proxy to teleport player " + playerName + " to");
+            }
+            return future;
+        }
+
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(playerName);
+        location.write(out);
+        futures.put(id, future);
+        consumers.put(id, consumer);
+        plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.ALL_QUEUE, out.toByteArray());
+
+        if (!player.getServer().getInfo().equals(server)) {
+            plugin.logDebug("Sending '" + playerName + "' to server '" + server.getName() + "'");
+
+            player.connect(server, (success, ex) -> {
+                if (!success) {
+                    future.complete(false);
+                    for (Consumer<String> c : consumer) {
+                        c.accept(ex.getMessage());
+                    }
+                }
+            });
+        }
+
+        return future;
     }
 
     /**
@@ -199,12 +330,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
 
         @Override
         public void sendMessages(String... messages) {
-            ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            out.writeUTF(serverName);
-            out.writeLong(id);
-            out.writeBoolean(false);
-            out.writeUTF(String.join("\n", messages));
-            plugin.getConnector().sendData(plugin, Action.COMMAND_RESPONSE, MessageTarget.OTHERS_QUEUE, out.toByteArray());
+            sendResponseMessage(serverName, id, messages);
         }
 
         @Override

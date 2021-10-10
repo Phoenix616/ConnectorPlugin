@@ -6,7 +6,7 @@ commands:
   connectorpluginbungee:
     description: Connector plugin command
     permission: connectorplugin.command
-    usage: /<command> [servercommand <server>|playercommand <player>] <command...>
+    usage: /<command> teleport|servercommand <server>|playercommand <player> <command...>
     aliases:
     - connectorbungee
     - connectorcommandbungee

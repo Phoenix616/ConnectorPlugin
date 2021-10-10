@@ -25,6 +25,7 @@ public class ConnectorCommand extends SubCommand {
 
     public ConnectorCommand(BungeeConnectorPlugin plugin) {
         super(plugin, "connectorpluginbungee");
+        registerSubCommand(new TeleportCommand(this));
         registerSubCommand(new ServerConsoleCommand(this));
         registerSubCommand(new ServerPlayerCommand(this));
         registerSubCommand(new ProxyConsoleCommand(this));

@@ -2,13 +2,14 @@
 
 Plugin to simplify communication between multiple Minecraft servers in a network (and their proxy).
 
-This (currently) does nothing on its own, it is meant to be depended on by other plugins so they can easily send data between servers without having to implement that logic themselves.
+This includes a bridging utility and some basic commands to use the provided utlity functionality but it is mostly meant to be depended on by other plugins so they can easily query and send data between servers without having to implement that logic themselves.
 
 ## Features
+- [x] Send arbitrary data to servers and proxies
 - [x] Send commands to other servers and proxies
 - [ ] Server-side command registration
 - [ ] Location/server state querying
-- [ ] Teleporting
+- [x] Teleporting
 - [ ] Proxy-side Vault/Tresor integration
 
 ## Communication Methods
@@ -20,37 +21,49 @@ This (currently) does nothing on its own, it is meant to be depended on by other
 
 ## Commands
 
-Main command on the Minecraft server:
+### On the Spigot server
 
-`/connectorplugin`
-- *Permission:* `connectorplugin.command`
-- *Aliases:* `connector`, `connectorcommand`, `connplugin`, `cp`
-- Subcommands:
-  - `servercommand <server> <command>...`
-    - *Permission:* `connectorplugin.command.servercommand`
-    - *Aliases:* `serverconsole`, `serverconsolecommand`, `server`, `scc`
-  - `proxycommand <command>...`
-    - *Permission:* `connectorplugin.command.proxycommand`
-    - *Aliases:* `proxyconsole`, `proxyconsolecommand`, `proxy`, `pcc`
-  - `proxyplayercommand <player> <command>...`
-    - *Permission:* `connectorplugin.command.proxyplayercommand`
-    - *Aliases:* `proxyplayer`, `player`, `ppc`
+> `/connectorplugin`  
+> *Permission:* `connectorplugin.command`  
+> *Aliases:* `connector`, `connectorcommand`, `connplugin`, `cp` 
+> 
+>> `teleport <player> <server> [<world> <x> <y> <z> [<yaw> <pitch>]]`  
+>> *Permission:* `connectorplugin.command.teleport`  
+>> *Aliases:* `tp`, `send`
+>
+>> `servercommand <server> <command>...`  
+>> *Permission:* `connectorplugin.command.servercommand`  
+>> *Aliases:* `serverconsole`, `serverconsolecommand`, `server`, `scc`
+>
+>> `proxycommand <command>...`  
+>> *Permission:* `connectorplugin.command.proxycommand`  
+>> *Aliases:* `proxyconsole`, `proxyconsolecommand`, `proxy`, `pcc`
+> 
+>> `proxyplayercommand <player> <command>...`  
+>> *Permission:* `connectorplugin.command.proxyplayercommand`  
+>> *Aliases:* `proxyplayer`, `player`, `ppc`
 
-Main command on the bungee proxy:
+### On the Bungee proxy
 
-`/connectorpluginbungee`
-- *Permission:* `connectorplugin.command`
-- *Aliases:* `connectorbungee`, `connectorcommandbungee`, `connpluginbungee`, `cpb`
-- Subcommands:
-  - `servercommand <server> <command>...`
-    - *Permission:* `connectorplugin.command.servercommand`
-    - *Aliases:* `serverconsole`, `serverconsolecommand`, `server`, `scc`
-  - `serverplayercommand <player> <command>...`
-    - *Permission:* `connectorplugin.command.serverplayercommand`
-    - *Aliases:* `serverplayer`, `player`, `spc`
-  - `proxycommand <command>...`
-    - *Permission:* `connectorplugin.command.proxycommand`
-    - *Aliases:* `proxyconsole`, `proxyconsolecommand`, `proxy`, `pcc`
+> `/connectorpluginbungee`  
+> *Permission:* `connectorplugin.command`  
+> *Aliases:* `connectorbungee`, `connectorcommandbungee`, `connpluginbungee`, `cpb`  
+>
+>> `teleport <player> <server> [<world> <x> <y> <z> [<yaw> <pitch>]]`  
+>> *Permission:* `connectorplugin.command.teleport`  
+>> *Aliases:* `tp`, `send`
+> 
+>> `servercommand <server> <command>...`  
+>> *Permission:* `connectorplugin.command.servercommand`  
+>> *Aliases:* `serverconsole`, `serverconsolecommand`, `server`, `scc`
+> 
+>> `serverplayercommand <player> <command>...`  
+>> *Permission:* `connectorplugin.command.serverplayercommand`  
+>> *Aliases:* `serverplayer`, `player`, `spc`
+> 
+>> `proxycommand <command>...`  
+>> *Permission:* `connectorplugin.command.proxycommand`  
+>> *Aliases:* `proxyconsole`, `proxyconsolecommand`, `proxy`, `pcc`
 
 ## Developer Info
 

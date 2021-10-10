@@ -16,37 +16,78 @@ package de.themoep.connectorplugin.bukkit;/*
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.BridgeCommon;
+import de.themoep.connectorplugin.LocationInfo;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Location;
 import org.bukkit.Server;
+import org.bukkit.World;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.conversations.Conversation;
 import org.bukkit.conversations.ConversationAbandonedEvent;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
+import org.spigotmc.event.player.PlayerSpawnLocationEvent;
 
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-public class Bridge extends BridgeCommon<BukkitConnectorPlugin> {
+public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Listener {
+
+    private Cache<String, TeleportRequest> teleportRequests = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
 
     public Bridge(BukkitConnectorPlugin plugin) {
         super(plugin);
 
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+
+        plugin.getConnector().registerHandler(plugin, Action.TELEPORT, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+            LocationInfo location = LocationInfo.read(in);
+            if (!location.getServer().equals(plugin.getServerName())) {
+                return;
+            }
+
+            if (plugin.getServer().getWorld(location.getWorld()) == null) {
+                sendResponse(senderServer, id, false, "No world with the name " + location.getWorld() + " exists on the server " + location.getServer() + "!");
+                return;
+            }
+
+            Player player = plugin.getServer().getPlayer(playerName);
+            if (player != null) {
+                if (player.teleport(toBukkit(location))) {
+                    sendResponse(senderServer, id, true, "Player teleported!");
+                } else {
+                    sendResponse(senderServer, id, false, "Unable to teleport");
+                }
+            } else {
+                teleportRequests.put(playerName.toLowerCase(Locale.ROOT), new TeleportRequest(senderServer, id, location));
+            }
+        });
+
         plugin.getConnector().registerHandler(plugin, Action.PLAYER_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String serverName = in.readUTF();
+            String senderServer = in.readUTF();
             long id = in.readLong();
             String playerName = in.readUTF();
             UUID playerId = new UUID(in.readLong(), in.readLong());
@@ -58,18 +99,14 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> {
             }
             if (player == null) {
                 plugin.logDebug("Could not find player " + playerName + "/" + playerId + " on this server to execute command " + command);
+                sendResponse(senderServer, id, false, "Could not find player " + playerName + "/" + playerId + " on this server to execute command " + command);
                 return;
             }
 
-            plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + serverName);
+            plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + senderServer);
             boolean success = plugin.getServer().dispatchCommand(player, command);
 
-            ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            out.writeUTF(serverName);
-            out.writeLong(id);
-            out.writeBoolean(true);
-            out.writeBoolean(success);
-            plugin.getConnector().sendData(plugin, Action.COMMAND_RESPONSE, MessageTarget.PROXY, player, out.toByteArray());
+            sendResponse(senderServer, id, success);
         });
 
         plugin.getConnector().registerHandler(plugin, Action.CONSOLE_COMMAND, (receiver, data) -> {
@@ -85,15 +122,10 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> {
             plugin.logDebug("Console command '" + command + "' triggered from " + senderServer);
             boolean success = plugin.getServer().dispatchCommand(new BridgedSender(senderServer, id), command);
 
-            ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            out.writeUTF(senderServer);
-            out.writeLong(id);
-            out.writeBoolean(true);
-            out.writeBoolean(success);
-            plugin.getConnector().sendData(plugin, Action.COMMAND_RESPONSE, MessageTarget.OTHERS_QUEUE,out.toByteArray());
+            sendResponse(senderServer, id, success);
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.COMMAND_RESPONSE, (receiver, data) -> {
+        plugin.getConnector().registerHandler(plugin, Action.RESPONSE, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String serverName = in.readUTF();
             if (!serverName.equals(plugin.getServerName())) {
@@ -105,9 +137,10 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> {
                 boolean status = in.readBoolean();
                 CompletableFuture<Boolean> future = futures.getIfPresent(id);
                 if (future != null) {
+                    futures.invalidate(id);
                     future.complete(status);
                 } else {
-                    plugin.logDebug("Could not find completion future for command execution with ID " + id);
+                    plugin.logDebug("Could not find completion future for execution with ID " + id);
                 }
             } else {
                 String message = in.readUTF();
@@ -119,6 +152,95 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> {
                 }
             }
         });
+    }
+
+    @EventHandler
+    public void onSpawnLocationEvent(PlayerSpawnLocationEvent event) {
+        TeleportRequest request = teleportRequests.getIfPresent(event.getPlayer().getName().toLowerCase(Locale.ROOT));
+        if (request != null) {
+            teleportRequests.invalidate(event.getPlayer().getName().toLowerCase(Locale.ROOT));
+            event.setSpawnLocation(toBukkit(request.location));
+            sendResponse(request.server, request.id, true, "Player login location changed");
+        }
+    }
+
+    private Location toBukkit(LocationInfo location) {
+        World world = plugin.getServer().getWorld(location.getWorld());
+        if (world == null) {
+            throw new IllegalArgumentException("No world with the name " + world.getName() + " exists!");
+        }
+        return new Location(
+                world,
+                location.getX(),
+                location.getY(),
+                location.getZ(),
+                location.getYaw(),
+                location.getPitch()
+        );
+    }
+
+    private void sendResponse(String server, long id, boolean success, String... messages) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(server);
+        out.writeLong(id);
+        out.writeBoolean(true);
+        out.writeBoolean(success);
+        plugin.getConnector().sendData(plugin, Action.RESPONSE, server.startsWith("proxy:") ? MessageTarget.ALL_PROXIES : MessageTarget.OTHERS_QUEUE, out.toByteArray());
+
+        if (messages.length > 0) {
+            sendResponseMessage(server, id, messages);
+        }
+    }
+
+    private void sendResponseMessage(String server, long id, String... messages) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(server);
+        out.writeLong(id);
+        out.writeBoolean(false);
+        out.writeUTF(String.join("\n", messages));
+        plugin.getConnector().sendData(plugin, Action.RESPONSE, server.startsWith("proxy:") ? MessageTarget.ALL_PROXIES : MessageTarget.OTHERS_QUEUE, out.toByteArray());
+    }
+
+    /**
+     * Teleport a player to a certain server in the network
+     * @param playerName    The name of the player to send
+     * @param serverName    The name of the server to send to
+     * @param consumer      Details about the sending
+     * @return A future about whether the player could be sent
+     */
+    public CompletableFuture<Boolean> sendToServer(String playerName, String serverName, Consumer<String>... consumer) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(playerName);
+        out.writeUTF(serverName);
+        futures.put(id, future);
+        consumers.put(id, consumer);
+        plugin.getConnector().sendData(plugin, Action.SEND_TO_SERVER, MessageTarget.ALL_PROXIES, out.toByteArray());
+        return future;
+    }
+
+    /**
+     * Teleport a player to a certain location in the network
+     * @param playerName    The name of the player to teleport
+     * @param location      The location to teleport to
+     * @param consumer      Details about the teleport
+     * @return A future about whether the player could be teleported
+     */
+    public CompletableFuture<Boolean> teleport(String playerName, LocationInfo location, Consumer<String>... consumer) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(playerName);
+        location.write(out);
+        futures.put(id, future);
+        consumers.put(id, consumer);
+        plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.ALL_PROXIES, out.toByteArray());
+        return future;
     }
 
     /**
@@ -187,6 +309,18 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> {
         return future;
     }
 
+    private class TeleportRequest {
+        private final String server;
+        private final long id;
+        private final LocationInfo location;
+
+        public TeleportRequest(String server, long id, LocationInfo location) {
+            this.server = server;
+            this.id = id;
+            this.location = location;
+        }
+    }
+
     private class BridgedSender implements ConsoleCommandSender {
         private final String serverName;
         private final long id;
@@ -208,7 +342,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> {
             out.writeLong(id);
             out.writeBoolean(false);
             out.writeUTF(String.join("\n", messages));
-            plugin.getConnector().sendData(plugin, Action.COMMAND_RESPONSE, MessageTarget.OTHERS_QUEUE, out.toByteArray());
+            plugin.getConnector().sendData(plugin, Action.RESPONSE, MessageTarget.OTHERS_QUEUE, out.toByteArray());
         }
 
         @Override
