@@ -23,6 +23,7 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.BridgeCommon;
 import de.themoep.connectorplugin.LocationInfo;
+import de.themoep.connectorplugin.ResponseHandler;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import io.papermc.lib.PaperLib;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -84,6 +85,20 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             }
         });
 
+        plugin.getConnector().registerHandler(plugin, Action.GET_LOCATION, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+
+            Player player = plugin.getServer().getPlayer(playerName);
+            if (player != null) {
+                sendResponse(senderServer, id, fromBukkit(player.getLocation()));
+            } else {
+                sendResponse(senderServer, id, (LocationInfo) null);
+            }
+        });
+
         plugin.getConnector().registerHandler(plugin, Action.PLAYER_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
@@ -133,14 +148,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             long id = in.readLong();
             boolean isCompletion = in.readBoolean();
             if (isCompletion) {
-                boolean status = in.readBoolean();
-                CompletableFuture<Boolean> future = futures.getIfPresent(id);
-                if (future != null) {
-                    futures.invalidate(id);
-                    future.complete(status);
-                } else {
-                    plugin.logDebug("Could not find completion future for execution with ID " + id);
-                }
+                handleResponse(id, in);
             } else {
                 String message = in.readUTF();
                 Consumer<String>[] consumer = consumers.getIfPresent(id);
@@ -166,7 +174,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
     private Location toBukkit(LocationInfo location) {
         World world = plugin.getServer().getWorld(location.getWorld());
         if (world == null) {
-            throw new IllegalArgumentException("No world with the name " + world.getName() + " exists!");
+            throw new IllegalArgumentException("No world with the name " + location.getWorld() + " exists!");
         }
         return new Location(
                 world,
@@ -178,12 +186,33 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         );
     }
 
-    private void sendResponse(String server, long id, boolean success, String... messages) {
+    private LocationInfo fromBukkit(Location location) {
+        if (location.getWorld() == null) {
+            return null;
+        }
+        return new LocationInfo(
+                plugin.getServerName(),
+                location.getWorld().getName(),
+                location.getX(),
+                location.getY(),
+                location.getZ(),
+                location.getYaw(),
+                location.getPitch()
+        );
+    }
+
+    private void sendResponse(String server, long id, Object response, String... messages) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(server);
         out.writeLong(id);
         out.writeBoolean(true);
-        out.writeBoolean(success);
+        if (response instanceof Boolean) {
+            out.writeBoolean((Boolean) response);
+        } else if (response instanceof LocationInfo) {
+            ((LocationInfo) response).write(out);
+        } else if (response == null) {
+            out.writeUTF("");
+        }
         plugin.getConnector().sendData(plugin, Action.RESPONSE, server.startsWith("proxy:") ? MessageTarget.ALL_PROXIES : MessageTarget.OTHERS_QUEUE, out.toByteArray());
 
         if (messages.length > 0) {
@@ -215,7 +244,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeLong(id);
         out.writeUTF(playerName);
         out.writeUTF(serverName);
-        futures.put(id, future);
+        responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
         plugin.getConnector().sendData(plugin, Action.SEND_TO_SERVER, MessageTarget.ALL_PROXIES, out.toByteArray());
         return future;
@@ -236,7 +265,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeLong(id);
         out.writeUTF(playerName);
         location.write(out);
-        futures.put(id, future);
+        responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
         plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.ALL_PROXIES, out.toByteArray());
         return future;
@@ -259,7 +288,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeLong(player.getUniqueId().getMostSignificantBits());
         out.writeLong(player.getUniqueId().getLeastSignificantBits());
         out.writeUTF(command);
-        futures.put(id, future);
+        responses.put(id, new ResponseHandler.Boolean(future));
         plugin.getConnector().sendData(plugin, Action.PLAYER_COMMAND, MessageTarget.PROXY, player, out.toByteArray());
         return future;
     }
@@ -279,7 +308,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeUTF(server);
         out.writeLong(id);
         out.writeUTF(command);
-        futures.put(id, future);
+        responses.put(id, new ResponseHandler.Boolean(future));
         if (consumer != null && consumer.length > 0) {
             consumers.put(id, consumer);
         }
@@ -300,7 +329,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(command);
-        futures.put(id, future);
+        responses.put(id, new ResponseHandler.Boolean(future));
         if (consumer != null && consumer.length > 0) {
             consumers.put(id, consumer);
         }

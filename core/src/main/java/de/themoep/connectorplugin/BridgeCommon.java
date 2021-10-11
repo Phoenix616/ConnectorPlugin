@@ -18,16 +18,16 @@ package de.themoep.connectorplugin;/*
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.io.ByteArrayDataInput;
 
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class BridgeCommon<P extends ConnectorPlugin> {
     protected final P plugin;
 
-    protected final Cache<Long, CompletableFuture<Boolean>> futures = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
+    protected final Cache<Long, ResponseHandler<?>> responses = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
     protected final Cache<Long, Consumer<String>[]> consumers = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build();
 
     protected static final Random RANDOM = new Random();
@@ -36,9 +36,26 @@ public class BridgeCommon<P extends ConnectorPlugin> {
         this.plugin = plugin;
     }
 
+    protected void handleResponse(long id, ByteArrayDataInput in) {
+        ResponseHandler<?> responseHandler = responses.getIfPresent(id);
+        if (responseHandler != null) {
+            responses.invalidate(id);
+            if (responseHandler instanceof ResponseHandler.Boolean) {
+                ((ResponseHandler.Boolean) responseHandler).getFuture().complete(in.readBoolean());
+            } else if (responseHandler instanceof ResponseHandler.Location) {
+                ((ResponseHandler.Location) responseHandler).getFuture().complete(LocationInfo.read(in));
+            } else {
+                plugin.logDebug("Response handler type " + responseHandler + " is not supported for ID " + id);
+            }
+        } else {
+            plugin.logDebug("Could not find response for execution with ID " + id);
+        }
+    }
+
     public static class Action {
         public static final String SEND_TO_SERVER = "send_to_server";
         public static final String TELEPORT = "teleport";
+        public static final String GET_LOCATION = "get_location";
         public static final String PLAYER_COMMAND = "player_command";
         public static final String CONSOLE_COMMAND = "console_command";
         public static final String RESPONSE = "response";

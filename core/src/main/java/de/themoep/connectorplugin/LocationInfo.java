@@ -95,8 +95,12 @@ public class LocationInfo {
     }
 
     public static LocationInfo read(ByteArrayDataInput in) {
+        String serverName = in.readUTF();
+        if (serverName.isEmpty()) {
+            return null;
+        }
         return new LocationInfo(
-                in.readUTF(),
+                serverName,
                 in.readUTF(),
                 in.readDouble(),
                 in.readDouble(),

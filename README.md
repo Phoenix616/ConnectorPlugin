@@ -8,7 +8,8 @@ This includes a bridging utility and some basic commands to use the provided utl
 - [x] Send arbitrary data to servers and proxies
 - [x] Send commands to other servers and proxies
 - [ ] Server-side command registration
-- [ ] Location/server state querying
+- [x] Location querying
+- [ ] Server state querying
 - [x] Teleporting
 - [ ] Proxy-side Vault/Tresor integration
 

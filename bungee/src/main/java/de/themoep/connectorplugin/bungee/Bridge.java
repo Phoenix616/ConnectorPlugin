@@ -23,6 +23,7 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.BridgeCommon;
 import de.themoep.connectorplugin.LocationInfo;
+import de.themoep.connectorplugin.ResponseHandler;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -133,13 +134,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
             long id = in.readLong();
             boolean isCompletion = in.readBoolean();
             if (isCompletion) {
-                boolean status = in.readBoolean();
-                CompletableFuture<Boolean> future = futures.getIfPresent(id);
-                if (future != null) {
-                    future.complete(status);
-                } else {
-                    plugin.logDebug("Could not find completion future for command execution with ID " + id);
-                }
+                handleResponse(id, in);
             } else {
                 String message = in.readUTF();
                 Consumer<String>[] consumer = consumers.getIfPresent(id);
@@ -223,7 +218,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         out.writeLong(id);
         out.writeUTF(playerName);
         location.write(out);
-        futures.put(id, future);
+        responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
         plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.ALL_QUEUE, out.toByteArray());
 
@@ -244,6 +239,23 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
     }
 
     /**
+     * Get the location of a player on the server
+     * @param player    The player to get the location for
+     * @return A future for when the location was queried
+     */
+    public CompletableFuture<LocationInfo> getLocation(ProxiedPlayer player) {
+        CompletableFuture<LocationInfo> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(player.getName());
+        responses.put(id, new ResponseHandler.Location(future));
+        plugin.getConnector().sendData(plugin, Action.GET_LOCATION, MessageTarget.SERVER, player, out.toByteArray());
+        return future;
+    }
+
+    /**
      * Run a command for a player on the server they are connected to.
      * The player needs to have access to that command!
      * @param player    The player to run the command for
@@ -260,7 +272,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         out.writeLong(player.getUniqueId().getMostSignificantBits());
         out.writeLong(player.getUniqueId().getLeastSignificantBits());
         out.writeUTF(command);
-        futures.put(id, future);
+        responses.put(id, new ResponseHandler.Boolean(future));
         plugin.getConnector().sendData(plugin, Action.PLAYER_COMMAND, MessageTarget.SERVER, player, out.toByteArray());
         return future;
     }
@@ -280,7 +292,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         out.writeUTF(server);
         out.writeLong(id);
         out.writeUTF(command);
-        futures.put(id, future);
+        responses.put(id, new ResponseHandler.Boolean(future));
         if (consumer != null && consumer.length > 0) {
             consumers.put(id, consumer);
         }
@@ -301,7 +313,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(command);
-        futures.put(id, future);
+        responses.put(id, new ResponseHandler.Boolean(future));
         if (consumer != null && consumer.length > 0) {
             consumers.put(id, consumer);
         }
