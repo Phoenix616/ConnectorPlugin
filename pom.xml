@@ -21,6 +21,7 @@
         <library.guava.version>21.0</library.guava.version>
         <library.lettuce.version>6.1.2.RELEASE</library.lettuce.version>
         <library.paho.version>1.2.5</library.paho.version>
+        <library.paperlib.version>1.0.6</library.paperlib.version>
     </properties>
 
     <modules>

@@ -12,6 +12,13 @@
 
     <artifactId>plugin</artifactId>
 
+    <repositories>
+        <repository>
+            <id>papermc</id>
+            <url>https://papermc.io/repo/repository/maven-public/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>${groupId}</groupId>
@@ -41,6 +48,12 @@
             <groupId>org.eclipse.paho</groupId>
             <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
             <version>${library.paho.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.papermc</groupId>
+            <artifactId>paperlib</artifactId>
+            <version>${library.paperlib.version}</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
@@ -111,6 +124,10 @@
                         <relocation>
                             <pattern>org.eclipse.paho</pattern>
                             <shadedPattern>de.themoep.connectorplugin.lib.paho</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>io.papermc.lib</pattern>
+                            <shadedPattern>de.themoep.connectorplugin.lib.paperlib</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>

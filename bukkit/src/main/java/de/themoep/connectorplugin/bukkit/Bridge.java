@@ -24,6 +24,7 @@ import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.BridgeCommon;
 import de.themoep.connectorplugin.LocationInfo;
 import de.themoep.connectorplugin.connector.MessageTarget;
+import io.papermc.lib.PaperLib;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Location;
@@ -75,11 +76,9 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
 
             Player player = plugin.getServer().getPlayer(playerName);
             if (player != null) {
-                if (player.teleport(toBukkit(location))) {
-                    sendResponse(senderServer, id, true, "Player teleported!");
-                } else {
-                    sendResponse(senderServer, id, false, "Unable to teleport");
-                }
+                PaperLib.teleportAsync(player, toBukkit(location)).whenComplete((success, ex) -> {
+                    sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                });
             } else {
                 teleportRequests.put(playerName.toLowerCase(Locale.ROOT), new TeleportRequest(senderServer, id, location));
             }
