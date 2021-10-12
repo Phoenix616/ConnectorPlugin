@@ -31,6 +31,10 @@ This includes a bridging utility and some basic commands to use the provided uti
 >> `teleport <player> <server> [<world> <x> <y> <z> [<yaw> <pitch>]]`  
 >> *Permission:* `connectorplugin.command.teleport`  
 >> *Aliases:* `tp`, `send`
+> 
+>> `teleporttoplayer <player> [<targetplayer>]`  
+>> *Permission:* `connectorplugin.command.teleporttoplayer`  
+>> *Aliases:* `teleportplayer`, `tpp`
 >
 >> `servercommand <server> <command>...`  
 >> *Permission:* `connectorplugin.command.servercommand`  
@@ -53,7 +57,11 @@ This includes a bridging utility and some basic commands to use the provided uti
 >> `teleport <player> <server> [<world> <x> <y> <z> [<yaw> <pitch>]]`  
 >> *Permission:* `connectorplugin.command.teleport`  
 >> *Aliases:* `tp`, `send`
-> 
+>
+>> `teleporttoplayer <player> [<targetplayer>]`  
+>> *Permission:* `connectorplugin.command.teleporttoplayer`  
+>> *Aliases:* `teleportplayer`, `tpp`
+>
 >> `servercommand <server> <command>...`  
 >> *Permission:* `connectorplugin.command.servercommand`  
 >> *Aliases:* `serverconsole`, `serverconsolecommand`, `server`, `scc`

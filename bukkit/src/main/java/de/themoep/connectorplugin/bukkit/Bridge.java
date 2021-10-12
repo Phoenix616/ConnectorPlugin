@@ -62,7 +62,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
 
     private CommandMap commandMap = null;
 
-    private Cache<String, TeleportRequest> teleportRequests = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
+    private Cache<String, LoginRequest> loginRequests = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
 
     public Bridge(BukkitConnectorPlugin plugin) {
         super(plugin);
@@ -98,7 +98,30 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
                     sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
                 });
             } else {
-                teleportRequests.put(playerName.toLowerCase(Locale.ROOT), new TeleportRequest(senderServer, id, location));
+                loginRequests.put(playerName.toLowerCase(Locale.ROOT), new LocationTeleportRequest(senderServer, id, location));
+            }
+        });
+
+        plugin.getConnector().registerHandler(plugin, Action.TELEPORT_TO_PLAYER, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+            String targetName = in.readUTF();
+
+            Player player = plugin.getServer().getPlayer(playerName);
+            if (player != null) {
+                Player target = plugin.getServer().getPlayer(targetName);
+                if (target != null) {
+                    PaperLib.teleportAsync(player, target.getLocation()).whenComplete((success, ex) -> {
+                        sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                    });
+                } else {
+                    PaperLib.teleportAsync(player, plugin.getServer().getWorlds().get(0).getSpawnLocation());
+                    sendResponse(senderServer, id, false, "Target player " + target.getName() + " not online!");
+                }
+            } else {
+                loginRequests.put(playerName.toLowerCase(Locale.ROOT), new PlayerTeleportRequest(senderServer, id, targetName));
             }
         });
 
@@ -202,11 +225,22 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
 
     @EventHandler
     public void onSpawnLocationEvent(PlayerSpawnLocationEvent event) {
-        TeleportRequest request = teleportRequests.getIfPresent(event.getPlayer().getName().toLowerCase(Locale.ROOT));
+        LoginRequest request = loginRequests.getIfPresent(event.getPlayer().getName().toLowerCase(Locale.ROOT));
         if (request != null) {
-            teleportRequests.invalidate(event.getPlayer().getName().toLowerCase(Locale.ROOT));
-            event.setSpawnLocation(toBukkit(request.location));
-            sendResponse(request.server, request.id, true, "Player login location changed");
+            loginRequests.invalidate(event.getPlayer().getName().toLowerCase(Locale.ROOT));
+            if (request instanceof LocationTeleportRequest) {
+                event.setSpawnLocation(toBukkit(((LocationTeleportRequest) request).location));
+                sendResponse(request.server, request.id, true, "Player login location changed");
+            } else if (request instanceof PlayerTeleportRequest) {
+                Player target = plugin.getServer().getPlayer(((PlayerTeleportRequest) request).targetName);
+                if (target == null) {
+                    event.setSpawnLocation(plugin.getServer().getWorlds().get(0).getSpawnLocation());
+                    sendResponse(request.server, request.id, false, "Target player " + ((PlayerTeleportRequest) request).targetName + " was not oonline?");
+                } else {
+                    event.setSpawnLocation(target.getLocation());
+                    sendResponse(request.server, request.id, true, "Player login location changed to " + target.getName() + "'s location");
+                }
+            }
         }
     }
 
@@ -332,6 +366,27 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
     }
 
     /**
+     * Teleport a player to a certain player in the network
+     * @param playerName    The name of the player to teleport
+     * @param targetName    The name of the target player
+     * @param consumer      Details about the teleport
+     * @return A future about whether the player could be teleported
+     */
+    public CompletableFuture<Boolean> teleport(String playerName, String targetName, Consumer<String>... consumer) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(playerName);
+        out.writeUTF(targetName);
+        responses.put(id, new ResponseHandler.Boolean(future));
+        consumers.put(id, consumer);
+        plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_PROXIES, out.toByteArray());
+        return future;
+    }
+
+    /**
      * Run a command for a player on the proxy they are connected to.
      * The player needs to have access to that command!
      * @param player    The player to run the command for
@@ -397,15 +452,31 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         return future;
     }
 
-    private class TeleportRequest {
+    private static class LoginRequest {
         private final String server;
         private final long id;
-        private final LocationInfo location;
 
-        public TeleportRequest(String server, long id, LocationInfo location) {
+        private LoginRequest(String server, long id) {
             this.server = server;
             this.id = id;
+        }
+    }
+
+    private static class LocationTeleportRequest extends LoginRequest {
+        private final LocationInfo location;
+
+        public LocationTeleportRequest(String server, long id, LocationInfo location) {
+            super(server, id);
             this.location = location;
+        }
+    }
+
+    private static class PlayerTeleportRequest extends LoginRequest {
+        private final String targetName;
+
+        public PlayerTeleportRequest(String server, long id, String targetName) {
+            super(server, id);
+            this.targetName = targetName;
         }
     }
 

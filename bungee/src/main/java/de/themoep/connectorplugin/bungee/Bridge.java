@@ -96,6 +96,17 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
                     .thenAccept(success -> sendResponse(senderServer, id, success));
         });
 
+        plugin.getConnector().registerHandler(plugin, Action.TELEPORT_TO_PLAYER, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+            String targetName = in.readUTF();
+
+            teleport(playerName, targetName, messages -> sendResponseMessage(senderServer, id, messages))
+                    .thenAccept(success -> sendResponse(senderServer, id, success));
+        });
+
         plugin.getConnector().registerHandler(plugin, Action.PLAYER_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String serverName = in.readUTF();
@@ -263,10 +274,10 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
 
         ServerInfo server = plugin.getProxy().getServerInfo(location.getServer());
         if (server == null) {
-            plugin.logDebug("Could not find server " + location.getServer() + " on this proxy to teleport player " + playerName + " to");
+            plugin.logDebug("Could not find server " + location.getServer() + " on this proxy to teleport player " + player.getName() + " to");
             future.complete(false);
             for (Consumer<String> c : consumer) {
-                c.accept("Could not find server " + location.getServer() + " on this proxy to teleport player " + playerName + " to");
+                c.accept("Could not find server " + location.getServer() + " on this proxy to teleport player " + player.getName() + " to");
             }
             return future;
         }
@@ -275,20 +286,87 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         long id = RANDOM.nextLong();
         out.writeUTF(plugin.getServerName());
         out.writeLong(id);
-        out.writeUTF(playerName);
+        out.writeUTF(player.getName());
         location.write(out);
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
         plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.ALL_QUEUE, out.toByteArray());
 
         if (!player.getServer().getInfo().equals(server)) {
-            plugin.logDebug("Sending '" + playerName + "' to server '" + server.getName() + "'");
+            plugin.logDebug("Sending '" + player.getName() + "' to server '" + server.getName() + "'");
 
             player.connect(server, (success, ex) -> {
                 if (!success) {
                     future.complete(false);
                     for (Consumer<String> c : consumer) {
                         c.accept(ex.getMessage());
+                    }
+                }
+            });
+        }
+
+        return future;
+    }
+
+    /**
+     * Teleport a player to a certain other player in the network
+     * @param playerName    The name of the player to teleport
+     * @param targetName    The name of the target player
+     * @param consumer      Details about the teleport
+     * @return A future about whether the player could be teleported
+     */
+    public CompletableFuture<Boolean> teleport(String playerName, String targetName, Consumer<String>... consumer) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+
+        ProxiedPlayer player = plugin.getProxy().getPlayer(playerName);
+        if (player == null) {
+            plugin.logDebug("Could not find player " + playerName + " on this proxy to send to teleport to " + targetName);
+            future.complete(false);
+            for (Consumer<String> c : consumer) {
+                c.accept("Could not find player " + playerName + " on this proxy to teleport to " + targetName);
+            }
+            return future;
+        }
+
+        ProxiedPlayer target = plugin.getProxy().getPlayer(targetName);
+        if (target == null) {
+            plugin.logDebug("Could not find target player " + targetName + " on this proxy to teleport " + player.getName() + " to");
+            future.complete(false);
+            for (Consumer<String> c : consumer) {
+                c.accept("Could not find target player " + targetName + " on this proxy to teleport " + player.getName() + " to");
+            }
+            return future;
+        }
+
+        if (target.getServer() == null) {
+            plugin.logDebug(target.getName() + " is not currently connected to any server.");
+            future.complete(false);
+            for (Consumer<String> c : consumer) {
+                c.accept(target.getName() + " is not currently connected to any server.");
+            }
+            return future;
+        }
+
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(player.getName());
+        out.writeUTF(target.getName());
+        responses.put(id, new ResponseHandler.Boolean(future));
+        consumers.put(id, consumer);
+        plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_PLAYER, MessageTarget.SERVER, target, out.toByteArray());
+
+        if (!player.getServer().getInfo().equals(target.getServer().getInfo())) {
+            plugin.logDebug("Sending '" + player.getName() + "' to server of player '" + target.getName() + "' (" + target.getServer().getInfo().getName() + ")");
+
+            player.connect(target.getServer().getInfo(), (success, ex) -> {
+                if (!success) {
+                    future.complete(false);
+                    if (ex != null) {
+                        for (Consumer<String> c : consumer) {
+                            c.accept(ex.getMessage());
+                        }
                     }
                 }
             });

@@ -26,6 +26,7 @@ public class ConnectorCommand extends SubCommand {
     public ConnectorCommand(BukkitConnectorPlugin plugin) {
         super(plugin, "connectorplugin", "connectorplugin.command");
         registerSubCommand(new TeleportCommand(this));
+        registerSubCommand(new TeleportToPlayerCommand(this));
         registerSubCommand(new ServerConsoleCommand(this));
         registerSubCommand(new ProxyConsoleCommand(this));
         registerSubCommand(new ProxyPlayerCommand(this));
