@@ -44,7 +44,7 @@ import java.util.function.Consumer;
 
 public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
 
-    private Table<String, String, BridgedCommand<ConnectingPlugin, CommandSender>> commands = HashBasedTable.create();
+    private Table<String, String, BridgedCommand<?, CommandSender>> commands = HashBasedTable.create();
 
     public Bridge(BungeeConnectorPlugin plugin) {
         super(plugin);
@@ -165,7 +165,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
                 return;
             }
 
-            BridgedCommand<ConnectingPlugin, CommandSender> command = commands.get(pluginName.toLowerCase(Locale.ROOT), commandName.toLowerCase(Locale.ROOT));
+            BridgedCommand<?, CommandSender> command = commands.get(pluginName.toLowerCase(Locale.ROOT), commandName.toLowerCase(Locale.ROOT));
 
             if (command == null) {
                 plugin.logDebug("Could not find executor for command " + commandName + " for plugin " + pluginName);
@@ -462,7 +462,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
      * Register a command on all servers
      * @param command   The command to register
      */
-    public void registerServerCommand(BridgedCommand<ConnectingPlugin, CommandSender> command) {
+    public void registerServerCommand(BridgedCommand<?, CommandSender> command) {
         commands.put(command.getPlugin().getName().toLowerCase(Locale.ROOT), command.getName().toLowerCase(Locale.ROOT), command);
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
