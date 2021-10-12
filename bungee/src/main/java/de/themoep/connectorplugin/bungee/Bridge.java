@@ -18,12 +18,16 @@ package de.themoep.connectorplugin.bungee;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.BridgeCommon;
+import de.themoep.connectorplugin.BridgedCommand;
 import de.themoep.connectorplugin.LocationInfo;
 import de.themoep.connectorplugin.ResponseHandler;
+import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -33,11 +37,14 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
+
+    private Table<String, String, BridgedCommand<ConnectingPlugin, CommandSender>> commands = HashBasedTable.create();
 
     public Bridge(BungeeConnectorPlugin plugin) {
         super(plugin);
@@ -123,6 +130,58 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
             boolean success = plugin.getProxy().getPluginManager().dispatchCommand(new BridgedSender(senderServer, id), command);
 
             sendResponse(senderServer, id, success);
+        });
+
+        plugin.getConnector().registerHandler(plugin, Action.EXECUTE_COMMAND, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String serverName = in.readUTF();
+            if (!serverName.equals(plugin.getServerName())) {
+                return;
+            }
+            String senderName = in.readUTF();
+            String pluginName = in.readUTF();
+            String commandName = in.readUTF();
+
+            CommandSender sender;
+            if (senderName.isEmpty()) {
+                sender = plugin.getProxy().getConsole();
+            } else {
+                sender = plugin.getProxy().getPlayer(senderName);
+            }
+
+            if (sender == null) {
+                plugin.logDebug("Could not find player " + senderName + " for execution of command " + commandName + " for plugin " + pluginName);
+                return;
+            }
+
+            BridgedCommand<ConnectingPlugin, CommandSender> command = commands.get(pluginName.toLowerCase(Locale.ROOT), commandName.toLowerCase(Locale.ROOT));
+
+            if (command == null) {
+                plugin.logDebug("Could not find executor for command " + commandName + " for plugin " + pluginName);
+                return;
+            }
+
+            String commandLabel = in.readUTF();
+            int argsCount = in.readInt();
+            String[] args = new String[argsCount];
+            for (int i = 0; i < argsCount; i++) {
+                args[i] = in.readUTF();
+            }
+
+            LocationInfo location = null;
+            if (sender instanceof ProxiedPlayer) {
+                location = LocationInfo.read(in);
+            }
+
+            try {
+                if (!command.onCommand(sender, location, commandLabel, args) && command.getUsage().length() > 0) {
+                    for (String line : command.getUsage().replace("<command>", commandLabel).split("\n")) {
+                        sender.sendMessage(line);
+                    }
+                }
+            } catch (Throwable ex) {
+                plugin.logError("Unhandled exception executing bridged command '" + commandLabel + "' from plugin " + command.getPlugin().getName(), ex);
+            }
         });
 
         plugin.getConnector().registerHandler(plugin, Action.RESPONSE, (receiver, data) -> {
@@ -319,6 +378,34 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         }
         plugin.getConnector().sendData(plugin, Action.CONSOLE_COMMAND, MessageTarget.OTHER_PROXIES, out.toByteArray());
         return future;
+    }
+
+    /**
+     * Register a command on all servers
+     * @param command   The command to register
+     */
+    public void registerServerCommand(BridgedCommand<ConnectingPlugin, CommandSender> command) {
+        commands.put(command.getPlugin().getName().toLowerCase(Locale.ROOT), command.getName().toLowerCase(Locale.ROOT), command);
+
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+
+        out.writeUTF(plugin.getServerName());
+        out.writeUTF(command.getPlugin().getName());
+        out.writeUTF(command.getName());
+        out.writeUTF(command.getDescription() != null ? command.getDescription() : "");
+        out.writeUTF(command.getUsage() != null ? command.getUsage() : "");
+        out.writeUTF(command.getPermission() != null ? command.getPermission() : "");
+        if (command.getPermissionMessage() != null) {
+            out.writeBoolean(true);
+            out.writeUTF(command.getPermissionMessage());
+        } else {
+            out.writeBoolean(false);
+        }
+        out.writeInt(command.getAliases().length);
+        for (String alias : command.getAliases()) {
+            out.writeUTF(alias);
+        }
+        plugin.getConnector().sendData(plugin, Action.REGISTER_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
     }
 
     private class BridgedSender implements CommandSender {

@@ -31,6 +31,9 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.World;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandMap;
+import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.conversations.Conversation;
 import org.bukkit.conversations.ConversationAbandonedEvent;
@@ -41,9 +44,13 @@ import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.SimplePluginManager;
 import org.spigotmc.event.player.PlayerSpawnLocationEvent;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -53,10 +60,20 @@ import java.util.function.Consumer;
 
 public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Listener {
 
+    private CommandMap commandMap = null;
+
     private Cache<String, TeleportRequest> teleportRequests = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
 
     public Bridge(BukkitConnectorPlugin plugin) {
         super(plugin);
+
+        try {
+            Field commandMapField = SimplePluginManager.class.getDeclaredField("commandMap");
+            commandMapField.setAccessible(true);
+            commandMap = (CommandMap) commandMapField.get(plugin.getServer().getPluginManager());
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
 
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
 
@@ -137,6 +154,28 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             boolean success = plugin.getServer().dispatchCommand(new BridgedSender(senderServer, id), command);
 
             sendResponse(senderServer, id, success);
+        });
+
+        plugin.getConnector().registerHandler(plugin, Action.REGISTER_COMMAND, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            String pluginName = in.readUTF();
+            String name = in.readUTF();
+
+            if (commandMap != null) {
+                String description = in.readUTF();
+                String usage = in.readUTF();
+                String permission = in.readUTF();
+                String permissionMessage = in.readBoolean() ? in.readUTF() : null;
+                int aliasCount = in.readInt();
+                List<String> aliases = new ArrayList<>();
+                for (int i = 0; i < aliasCount; i++) {
+                    aliases.add(in.readUTF());
+                }
+                commandMap.register(pluginName, new BridgedCommandExecutor(senderServer, pluginName, name, description, usage, aliases, permission, permissionMessage));
+            } else {
+                plugin.logError("Unable to register proxy command " + name + " for plugin " + pluginName + " due to missing command map access!");
+            }
         });
 
         plugin.getConnector().registerHandler(plugin, Action.RESPONSE, (receiver, data) -> {
@@ -227,6 +266,27 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeBoolean(false);
         out.writeUTF(String.join("\n", messages));
         plugin.getConnector().sendData(plugin, Action.RESPONSE, server.startsWith("proxy:") ? MessageTarget.ALL_PROXIES : MessageTarget.OTHERS_QUEUE, out.toByteArray());
+    }
+
+    private void sendCommandExecution(CommandSender sender, BridgedCommandExecutor executor, String label, String[] args) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(executor.getServer());
+        out.writeUTF(sender instanceof Player ? sender.getName() : "");
+        out.writeUTF(executor.getPluginName());
+        out.writeUTF(executor.getName());
+        out.writeUTF(label);
+        out.writeInt(args.length);
+        for (String arg : args) {
+            out.writeUTF(arg);
+        }
+
+        if (sender instanceof Player) {
+            fromBukkit(((Player) sender).getLocation()).write(out);
+            plugin.getConnector().sendData(plugin, Action.EXECUTE_COMMAND, MessageTarget.PROXY, (Player) sender, out.toByteArray());
+        } else {
+            out.writeUTF(""); // Indicate empty location
+            plugin.getConnector().sendData(plugin, Action.EXECUTE_COMMAND, MessageTarget.ALL_PROXIES, out.toByteArray());
+        }
     }
 
     /**
@@ -505,6 +565,37 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         @Override
         public void setOp(boolean value) {
 
+        }
+    }
+
+    private class BridgedCommandExecutor extends Command {
+        private final String server;
+        private final String pluginName;
+
+        public BridgedCommandExecutor(String server, String pluginName, String name, String description, String usage, List<String> aliases, String permission, String permissionMessage) {
+            super(name, description, usage, aliases);
+            this.server = server;
+            this.pluginName = pluginName;
+            setPermission(permission);
+            setPermissionMessage(permissionMessage);
+        }
+
+        @Override
+        public boolean execute(CommandSender sender, String label, String[] args) {
+            if (!testPermission(sender)) {
+                return true;
+            }
+
+            sendCommandExecution(sender, this, label, args);
+            return true;
+        }
+
+        public String getServer() {
+            return server;
+        }
+
+        public String getPluginName() {
+            return pluginName;
         }
     }
 }

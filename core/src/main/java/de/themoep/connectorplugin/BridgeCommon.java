@@ -59,5 +59,7 @@ public class BridgeCommon<P extends ConnectorPlugin> {
         public static final String PLAYER_COMMAND = "player_command";
         public static final String CONSOLE_COMMAND = "console_command";
         public static final String RESPONSE = "response";
+        public static final String REGISTER_COMMAND = "register_command";
+        public static final String EXECUTE_COMMAND = "execute_command";
     }
 }
