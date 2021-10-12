@@ -2,7 +2,7 @@
 
 Plugin to simplify communication between multiple Minecraft servers in a network (and their proxy).
 
-This includes a bridging utility and some basic commands to use the provided utlity functionality but it is mostly meant to be depended on by other plugins so they can easily query and send data between servers without having to implement that logic themselves.
+This includes a bridging utility and some basic commands to use the provided utility functionality but it is mostly meant to be depended on by other plugins so they can easily query and send data between servers without having to implement that logic themselves.
 
 ## Features
 - [x] Send arbitrary data to servers and proxies
@@ -87,7 +87,7 @@ Check [the wiki](https://wiki.phoenix616.dev/plugin:connectorplugin:usage:start)
 <dependency>
     <groupId>de.themoep.connectorplugin</groupId>
     <artifactId>[bukkit|bungee]</artifactId>
-    <version>1.3-SNAPSHOT</version>
+    <version>1.2-SNAPSHOT</version>
     <scope>provided</scope>
 </dependency>
 ```
@@ -102,7 +102,7 @@ This project is [licensed](LICENSE) under the AGPLv3:
 
 ```
  ConnectorPlugin
- Copyright (C) 2020 Max Lee aka Phoenix616 (max@themoep.de)
+ Copyright (C) 2021 Max Lee aka Phoenix616 (max@themoep.de)
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU Affero General Public License as published
