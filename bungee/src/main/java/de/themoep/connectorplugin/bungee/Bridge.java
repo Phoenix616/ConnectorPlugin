@@ -512,7 +512,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
 
         @Override
         public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
-            if (command instanceof TabExecutor) {
+            if (command instanceof TabExecutor && sender.hasPermission(command.getPermission() + ".tabcomplete." + getName())) {
                 return ((TabExecutor) command).onTabComplete(sender, args);
             }
             return Collections.emptySet();
