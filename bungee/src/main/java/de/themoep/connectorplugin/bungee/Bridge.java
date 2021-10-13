@@ -27,13 +27,15 @@ import de.themoep.connectorplugin.BridgeCommon;
 import de.themoep.connectorplugin.BridgedCommand;
 import de.themoep.connectorplugin.LocationInfo;
 import de.themoep.connectorplugin.ResponseHandler;
-import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.plugin.Command;
+import net.md_5.bungee.api.plugin.Plugin;
+import net.md_5.bungee.api.plugin.TabExecutor;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -462,7 +464,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
      * Register a command on all servers
      * @param command   The command to register
      */
-    public void registerServerCommand(BridgedCommand<?, CommandSender> command) {
+    public void registerServerCommand(BridgedCommand<? extends Plugin, CommandSender> command) {
         commands.put(command.getPlugin().getName().toLowerCase(Locale.ROOT), command.getName().toLowerCase(Locale.ROOT), command);
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -484,6 +486,37 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
             out.writeUTF(alias);
         }
         plugin.getConnector().sendData(plugin, Action.REGISTER_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
+
+        plugin.getProxy().getPluginManager().registerCommand(command.getPlugin(), new ForwardingCommand(command.getName(), command.getPermission(), command));
+        for (String alias : command.getAliases()) {
+            plugin.getProxy().getPluginManager().registerCommand(command.getPlugin(), new ForwardingCommand(alias, command.getPermission(), command));
+        }
+    }
+
+    private class ForwardingCommand extends Command implements TabExecutor {
+        private final BridgedCommand<? extends Plugin, CommandSender> command;
+
+        public ForwardingCommand(String name, String permission, BridgedCommand<? extends Plugin, CommandSender> command) {
+            super(name, permission);
+            this.command = command;
+        }
+
+        @Override
+        public void execute(CommandSender sender, String[] args) {
+            if (sender instanceof ProxiedPlayer) {
+                ((ProxiedPlayer) sender).chat("/" + getName() + " " + String.join(" ", args));
+            } else {
+                command.onCommand(sender, null, getName(), args);
+            }
+        }
+
+        @Override
+        public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+            if (command instanceof TabExecutor) {
+                return ((TabExecutor) command).onTabComplete(sender, args);
+            }
+            return Collections.emptySet();
+        }
     }
 
     private class BridgedSender implements CommandSender {
