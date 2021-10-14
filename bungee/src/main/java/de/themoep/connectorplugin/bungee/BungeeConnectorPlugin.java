@@ -38,8 +38,6 @@ public final class BungeeConnectorPlugin extends BungeePlugin implements Connect
 
     @Override
     public void onEnable() {
-        connector = new PluginMessageConnector(this);
-
         debug = getConfig().getBoolean("debug");
 
         String messengerType = getConfig().getString("messenger-type", "plugin_messages").toLowerCase(Locale.ROOT);
