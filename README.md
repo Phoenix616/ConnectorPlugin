@@ -1,6 +1,6 @@
 # ConnectorPlugin
 
-Plugin to simplify communication between multiple Minecraft servers in a network (and their proxy).
+Plugin to simplify communication between multiple Minecraft servers in a network (and their proxy). Support Spigot/Paper, BungeeCord and Velocity.
 
 This includes a bridging utility and some basic commands to use the provided utility functionality but it is mostly meant to be depended on by other plugins so they can easily query and send data between servers without having to implement that logic themselves.
 
@@ -48,12 +48,21 @@ This includes a bridging utility and some basic commands to use the provided uti
 >> *Permission:* `connectorplugin.command.proxyplayercommand`  
 >> *Aliases:* `proxyplayer`, `player`, `ppc`
 
-### On the Bungee proxy
+### On the Proxies
 
+### Main Bungee command
 > `/connectorpluginbungee`  
 > *Permission:* `connectorplugin.command`  
 > *Aliases:* `connectorbungee`, `connectorcommandbungee`, `connpluginbungee`, `cpb`  
 >
+> 
+### Main Velocity command
+> `/connectorpluginvelocity`  
+> *Permission:* `connectorplugin.command`  
+> *Aliases:* `connectorvelocity`, `connectorcommandvelocity`, `connpluginvelocity`, `cpv`  
+>
+
+### Proxy sub commands
 >> `teleport <player> <server> [<world> <x> <y> <z> [<yaw> <pitch>]]`  
 >> *Permission:* `connectorplugin.command.teleport`  
 >> *Aliases:* `tp`, `send`
@@ -94,7 +103,7 @@ Check [the wiki](https://wiki.phoenix616.dev/plugin:connectorplugin:usage:start)
 ```xml
 <dependency>
     <groupId>de.themoep.connectorplugin</groupId>
-    <artifactId>[bukkit|bungee]</artifactId>
+    <artifactId>[bukkit|bungee|velocity]</artifactId>
     <version>1.2-SNAPSHOT</version>
     <scope>provided</scope>
 </dependency>

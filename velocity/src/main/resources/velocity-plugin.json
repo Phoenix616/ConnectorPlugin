@@ -1,0 +1,7 @@
+{
+  "id": "connectorplugin",
+  "name": "ConnectorPlugin",
+  "version": "${minecraft.plugin.version}",
+  "main": "de.themoep.connectorplugin.velocity.VelocityConnectorPlugin",
+  "authors": ["Phoenix616"]
+}
