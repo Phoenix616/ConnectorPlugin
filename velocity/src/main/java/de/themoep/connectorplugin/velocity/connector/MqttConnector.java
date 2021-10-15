@@ -18,7 +18,6 @@ package de.themoep.connectorplugin.velocity.connector;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import com.velocitypowered.api.proxy.Player;
 import de.themoep.connectorplugin.velocity.VelocityConnectorPlugin;
 import de.themoep.connectorplugin.connector.Message;
 import de.themoep.connectorplugin.connector.MqttConnection;
@@ -35,13 +34,13 @@ public class MqttConnector extends VelocityConnector {
                 plugin.getConfig().getString("mqtt.username"),
                 plugin.getConfig().getString("mqtt.password"),
                 plugin.getConfig().getInt("mqtt.keep-alive"),
-                (receiver, message) -> handle(receiver.isEmpty() ? null : getReceiver(receiver), message)
+                (receiver, message) -> handle(getReceiver(receiver), message)
         );
     }
 
     @Override
-    protected void sendDataImplementation(Player player, Message message) {
-        connection.sendMessage(player != null ? player.getUsername() : "", message);
+    protected void sendDataImplementation(String targetData, Message message) {
+        connection.sendMessage(targetData, message);
     }
 
     @Override

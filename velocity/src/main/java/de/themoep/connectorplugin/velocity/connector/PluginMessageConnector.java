@@ -125,7 +125,7 @@ public class PluginMessageConnector extends VelocityConnector {
     }
 
     @Override
-    public void sendDataImplementation(Player player, Message message) {
+    public void sendDataImplementation(String targetData, Message message) {
         byte[] messageData = message.writeToByteArray(plugin);
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -133,6 +133,8 @@ public class PluginMessageConnector extends VelocityConnector {
         out.writeInt(messageData.length);
         out.write(messageData);
         byte[] dataToSend = out.toByteArray();
+
+        RegisteredServer server = getTargetServer(targetData);
 
         switch (message.getTarget()) {
             case ALL_WITH_PLAYERS:
@@ -142,24 +144,16 @@ public class PluginMessageConnector extends VelocityConnector {
                 sendToAllAndQueue(dataToSend, null);
                 break;
             case OTHERS_WITH_PLAYERS:
-                if (player.getCurrentServer().isPresent()) {
-                    sendToAllWithPlayers(dataToSend, player.getCurrentServer().get().getServer());
-                } else {
-                    sendToAllWithPlayers(dataToSend, null);
-                }
+                sendToAllWithPlayers(dataToSend, server);
                 break;
             case OTHERS_QUEUE:
-                if (player.getCurrentServer().isPresent()) {
-                    sendToAllAndQueue(dataToSend, player.getCurrentServer().get().getServer());
-                } else {
-                    sendToAllAndQueue(dataToSend, null);
-                }
+                sendToAllAndQueue(dataToSend, server);
                 break;
             case SERVER:
-                if (player != null && player.getCurrentServer().isPresent()) {
-                    player.getCurrentServer().get().sendPluginMessage(messageChannel, dataToSend);
+                if (server != null) {
+                    server.sendPluginMessage(messageChannel, dataToSend);
                 } else {
-                    throw new UnsupportedOperationException("Could not send data to " + message.getTarget() + " as player wasn't specified!");
+                    throw new UnsupportedOperationException("Could not send data to " + message.getTarget() + " as target server wasn't found from " + targetData + "!");
                 }
                 break;
             default:

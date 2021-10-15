@@ -59,6 +59,17 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
             return;
         }
 
+        String target = in.readUTF();
+        if (target.startsWith(SERVER_PREFIX) && !target.equalsIgnoreCase(SERVER_PREFIX + plugin.getServerName())) {
+            return;
+        } else if (!target.isEmpty() && !player.getName().equals(target)) {
+            player = getReceiver(target);
+            if (player == null) {
+                plugin.logError("Player " + player + " wasn't found online?");
+                return;
+            }
+        }
+
         int messageLength = in.readInt();
         byte[] messageData = new byte[messageLength];
         in.readFully(messageData);
@@ -73,15 +84,20 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
     }
 
     @Override
-    public void sendDataImplementation(Player player, Message message) {
+    public void sendDataImplementation(String targetData, Message message) {
         byte[] messageData = message.writeToByteArray(plugin);
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(plugin.getGroup());
+        out.writeUTF(targetData);
         out.writeInt(messageData.length);
         out.write(messageData);
         byte[] dataToSend = out.toByteArray();
 
+        Player player = null;
+        if (!targetData.startsWith("server:")) {
+            player = plugin.getServer().getPlayer(targetData);
+        }
         if (player != null) {
             player.sendPluginMessage(plugin, plugin.getMessageChannel(), dataToSend);
         } else if (message.getTarget() != MessageTarget.PROXY) {

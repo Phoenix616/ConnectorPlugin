@@ -35,13 +35,13 @@ public class RedisConnector extends BungeeConnector {
                 plugin.getConfig().getInt("redis.port"),
                 plugin.getConfig().getString("redis.password"),
                 plugin.getConfig().getLong("redis.timeout"),
-                (receiver, message) -> handle(receiver.isEmpty() ? null : getReceiver(receiver), message)
+                (target, message) -> handle(getReceiver(target), message)
         );
     }
 
     @Override
-    protected void sendDataImplementation(ProxiedPlayer player, Message message) {
-        connection.sendMessage(player != null ? player.getName() : "", message);
+    protected void sendDataImplementation(String targetData, Message message) {
+        connection.sendMessage(targetData, message);
     }
 
     @Override

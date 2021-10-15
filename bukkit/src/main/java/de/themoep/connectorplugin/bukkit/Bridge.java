@@ -196,6 +196,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
                     aliases.add(in.readUTF());
                 }
                 commandMap.register(pluginName, new BridgedCommandExecutor(senderServer, pluginName, name, description, usage, aliases, permission, permissionMessage));
+                plugin.logDebug("Registered command " + name + " by plugin " + pluginName + " from " + senderServer);
             } else {
                 plugin.logError("Unable to register proxy command " + name + " for plugin " + pluginName + " due to missing command map access!");
             }
@@ -221,6 +222,10 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
                 }
             }
         });
+
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(plugin.getServerName());
+        plugin.getConnector().sendData(plugin, Action.STARTED, MessageTarget.ALL_PROXIES, out.toByteArray());
     }
 
     @EventHandler

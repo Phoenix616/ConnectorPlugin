@@ -53,6 +53,7 @@ public class BridgeCommon<P extends ConnectorPlugin> {
     }
 
     public static class Action {
+        public static final String STARTED = "started";
         public static final String SEND_TO_SERVER = "send_to_server";
         public static final String TELEPORT = "teleport";
         public static final String TELEPORT_TO_PLAYER = "teleport_to_player";

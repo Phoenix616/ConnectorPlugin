@@ -37,7 +37,6 @@ import de.themoep.connectorplugin.LocationInfo;
 import de.themoep.connectorplugin.ResponseHandler;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import net.kyori.adventure.audience.MessageType;
-import net.kyori.adventure.identity.Identified;
 import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
@@ -46,7 +45,6 @@ import net.kyori.adventure.title.Title;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -61,6 +59,15 @@ public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
 
     public Bridge(VelocityConnectorPlugin plugin) {
         super(plugin);
+
+        plugin.getConnector().registerHandler(plugin, Action.STARTED, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+
+            for (BridgedCommand<?, CommandSource> command : commands.values()) {
+                registerServerCommand(senderServer, command);
+            }
+        });
 
         plugin.getConnector().registerHandler(plugin, Action.SEND_TO_SERVER, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
@@ -473,6 +480,19 @@ public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
     }
 
     /**
+     * Register a command on a server
+     * @param server    The server
+     * @param command   The command to register
+     */
+    public void registerServerCommand(String server, BridgedCommand<?, CommandSource> command) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+
+        out.writeUTF(plugin.getServerName());
+        write(out, command);
+        plugin.getConnector().sendData(plugin, Action.REGISTER_COMMAND, MessageTarget.SERVER, server, out.toByteArray());
+    }
+
+    /**
      * Register a command on all servers
      * @param command   The command to register
      */
@@ -482,6 +502,14 @@ public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
 
         out.writeUTF(plugin.getServerName());
+        write(out, command);
+        plugin.getConnector().sendData(plugin, Action.REGISTER_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
+
+        ForwardingCommand mainCommand = new ForwardingCommand(command);
+        plugin.getProxy().getCommandManager().register(mainCommand, mainCommand);
+    }
+
+    private void write(ByteArrayDataOutput out, BridgedCommand<?, CommandSource> command) {
         out.writeUTF(command.getPlugin().getName());
         out.writeUTF(command.getName());
         out.writeUTF(command.getDescription() != null ? command.getDescription() : "");
@@ -497,10 +525,6 @@ public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
         for (String alias : command.getAliases()) {
             out.writeUTF(alias);
         }
-        plugin.getConnector().sendData(plugin, Action.REGISTER_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
-
-        ForwardingCommand mainCommand = new ForwardingCommand(command);
-        plugin.getProxy().getCommandManager().register(mainCommand, mainCommand);
     }
 
     private class ForwardingCommand implements SimpleCommand, CommandMeta {

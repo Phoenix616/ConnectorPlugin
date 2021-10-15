@@ -19,6 +19,8 @@ package de.themoep.connectorplugin.velocity.connector;
  */
 
 import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.server.RegisteredServer;
+import de.themoep.connectorplugin.connector.Message;
 import de.themoep.connectorplugin.velocity.VelocityConnectorPlugin;
 import de.themoep.connectorplugin.connector.Connector;
 
@@ -31,4 +33,23 @@ public abstract class VelocityConnector extends Connector<VelocityConnectorPlugi
     protected Player getReceiver(String name) {
         return plugin.getProxy().getPlayer(name).orElse(null);
     }
+
+    protected RegisteredServer getTargetServer(String target) {
+        if (target.startsWith(SERVER_PREFIX)) {
+            return plugin.getProxy().getServer(target.substring(SERVER_PREFIX.length())).orElse(null);
+        } else {
+            Player player = getReceiver(target);
+            if (player != null && player.getCurrentServer().isPresent()) {
+                return player.getCurrentServer().get().getServer();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected void sendDataImplementation(Object targetData, Message message) {
+        sendDataImplementation(targetData instanceof Player ? ((Player) targetData).getUsername() : targetData instanceof String ? SERVER_PREFIX + targetData : "", message);
+    }
+
+    protected abstract void sendDataImplementation(String targetData, Message message);
 }

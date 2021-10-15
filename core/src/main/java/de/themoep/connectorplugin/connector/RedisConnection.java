@@ -34,6 +34,8 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.function.BiConsumer;
 
+import static de.themoep.connectorplugin.connector.Connector.SERVER_PREFIX;
+
 public class RedisConnection {
 
     private final ConnectorPlugin plugin;
@@ -79,14 +81,17 @@ public class RedisConnection {
                     return;
                 }
 
-                String playerName = in.readUTF();
+                String target = in.readUTF();
+                if (target.startsWith(SERVER_PREFIX) && !target.equalsIgnoreCase(SERVER_PREFIX + plugin.getServerName())) {
+                    return;
+                }
 
                 int messageLength = in.readInt();
                 byte[] messageData = new byte[messageLength];
                 in.readFully(messageData);
 
                 try {
-                    onMessage.accept(playerName, Message.fromByteArray(messageData));
+                    onMessage.accept(target, Message.fromByteArray(messageData));
                 } catch (IllegalArgumentException e) {
                     plugin.logError("Error while decoding message on " + channel + " redis channel! ", e);
                 } catch (VersionMismatchException e) {
@@ -113,7 +118,7 @@ public class RedisConnection {
         connection.async().subscribe(plugin.getMessageChannel());
     }
 
-    public void sendMessage(String senderName, Message message) {
+    public void sendMessage(String targetData, Message message) {
         if (connection == null || !connection.isOpen()) {
             connection = client.connect(new StringByteArrayCodec());
         }
@@ -121,7 +126,7 @@ public class RedisConnection {
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(plugin.getGroup());
-        out.writeUTF(senderName != null ? senderName : "");
+        out.writeUTF(targetData != null ? targetData : "");
         out.writeInt(messageData.length);
         out.write(messageData);
         byte[] dataToSend = out.toByteArray();

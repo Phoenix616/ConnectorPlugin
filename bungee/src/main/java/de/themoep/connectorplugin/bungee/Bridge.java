@@ -51,6 +51,15 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
     public Bridge(BungeeConnectorPlugin plugin) {
         super(plugin);
 
+        plugin.getConnector().registerHandler(plugin, Action.STARTED, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+
+            for (BridgedCommand<?, CommandSender> command : commands.values()) {
+                registerServerCommand(senderServer, command);
+            }
+        });
+
         plugin.getConnector().registerHandler(plugin, Action.SEND_TO_SERVER, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
@@ -461,6 +470,19 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
     }
 
     /**
+     * Register a command on a server
+     * @param server    The server
+     * @param command   The command to register
+     */
+    public void registerServerCommand(String server, BridgedCommand<?, CommandSender> command) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+
+        out.writeUTF(plugin.getServerName());
+        write(out, command);
+        plugin.getConnector().sendData(plugin, Action.REGISTER_COMMAND, MessageTarget.SERVER, server, out.toByteArray());
+    }
+
+    /**
      * Register a command on all servers
      * @param command   The command to register
      */
@@ -470,6 +492,16 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
 
         out.writeUTF(plugin.getServerName());
+        write(out, command);
+        plugin.getConnector().sendData(plugin, Action.REGISTER_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
+
+        plugin.getProxy().getPluginManager().registerCommand(command.getPlugin(), new ForwardingCommand(command.getName(), command.getPermission(), command));
+        for (String alias : command.getAliases()) {
+            plugin.getProxy().getPluginManager().registerCommand(command.getPlugin(), new ForwardingCommand(alias, command.getPermission(), command));
+        }
+    }
+
+    private void write(ByteArrayDataOutput out, BridgedCommand<?, CommandSender> command) {
         out.writeUTF(command.getPlugin().getName());
         out.writeUTF(command.getName());
         out.writeUTF(command.getDescription() != null ? command.getDescription() : "");
@@ -484,12 +516,6 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         out.writeInt(command.getAliases().length);
         for (String alias : command.getAliases()) {
             out.writeUTF(alias);
-        }
-        plugin.getConnector().sendData(plugin, Action.REGISTER_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
-
-        plugin.getProxy().getPluginManager().registerCommand(command.getPlugin(), new ForwardingCommand(command.getName(), command.getPermission(), command));
-        for (String alias : command.getAliases()) {
-            plugin.getProxy().getPluginManager().registerCommand(command.getPlugin(), new ForwardingCommand(alias, command.getPermission(), command));
         }
     }
 

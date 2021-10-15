@@ -28,6 +28,8 @@ import org.eclipse.paho.mqttv5.common.MqttException;
 import java.nio.charset.StandardCharsets;
 import java.util.function.BiConsumer;
 
+import static de.themoep.connectorplugin.connector.Connector.SERVER_PREFIX;
+
 public class MqttConnection {
 
     private final ConnectorPlugin plugin;
@@ -74,14 +76,17 @@ public class MqttConnection {
                     return;
                 }
 
-                String playerName = in.readUTF();
+                String target = in.readUTF();
+                if (target.startsWith(SERVER_PREFIX) && !target.equalsIgnoreCase(SERVER_PREFIX + plugin.getServerName())) {
+                    return;
+                }
 
                 int messageLength = in.readInt();
                 byte[] messageData = new byte[messageLength];
                 in.readFully(messageData);
 
                 try {
-                    onMessage.accept(playerName, Message.fromByteArray(messageData));
+                    onMessage.accept(target, Message.fromByteArray(messageData));
                 } catch (IllegalArgumentException e) {
                     plugin.logError("Error while decoding message on " + topic + " MQTT topic! ", e);
                 } catch (VersionMismatchException e) {

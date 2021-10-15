@@ -21,7 +21,6 @@ package de.themoep.connectorplugin.bukkit.connector;
 import de.themoep.connectorplugin.bukkit.BukkitConnectorPlugin;
 import de.themoep.connectorplugin.connector.Message;
 import de.themoep.connectorplugin.connector.RedisConnection;
-import org.bukkit.entity.Player;
 
 public class RedisConnector extends BukkitConnector {
     private final RedisConnection connection;
@@ -36,13 +35,13 @@ public class RedisConnector extends BukkitConnector {
                 plugin.getConfig().getString("redis.password"),
                 plugin.getConfig().getLong("redis.timeout"),
                 (receiver, message) -> plugin.getServer().getScheduler().runTask(plugin, () ->
-                        handle(receiver.isEmpty() ? null : getReceiver(receiver), message))
+                        handle(getReceiver(receiver), message))
         );
     }
 
     @Override
-    protected void sendDataImplementation(Player player, Message message) {
-        connection.sendMessage(player != null ? player.getName() : "", message);
+    protected void sendDataImplementation(String targetData, Message message) {
+        connection.sendMessage(targetData, message);
     }
 
     @Override

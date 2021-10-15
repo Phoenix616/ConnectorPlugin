@@ -20,6 +20,8 @@ package de.themoep.connectorplugin.bungee.connector;
 
 import de.themoep.connectorplugin.bungee.BungeeConnectorPlugin;
 import de.themoep.connectorplugin.connector.Connector;
+import de.themoep.connectorplugin.connector.Message;
+import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 public abstract class BungeeConnector extends Connector<BungeeConnectorPlugin, ProxiedPlayer> {
@@ -31,4 +33,23 @@ public abstract class BungeeConnector extends Connector<BungeeConnectorPlugin, P
     protected ProxiedPlayer getReceiver(String name) {
         return plugin.getProxy().getPlayer(name);
     }
+
+    protected ServerInfo getTargetServer(String target) {
+        if (target.startsWith(SERVER_PREFIX)) {
+            return plugin.getProxy().getServerInfo(target.substring(SERVER_PREFIX.length()));
+        } else {
+            ProxiedPlayer player = getReceiver(target);
+            if (player != null && player.getServer() != null) {
+                return player.getServer().getInfo();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected void sendDataImplementation(Object targetData, Message message) {
+        sendDataImplementation(targetData instanceof ProxiedPlayer ? ((ProxiedPlayer) targetData).getName() : targetData instanceof String ? SERVER_PREFIX + targetData : "", message);
+    }
+
+    protected abstract void sendDataImplementation(String targetData, Message message);
 }

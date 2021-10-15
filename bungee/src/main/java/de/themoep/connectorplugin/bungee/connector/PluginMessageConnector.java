@@ -54,6 +54,8 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
         ByteArrayDataInput in = ByteStreams.newDataInput(event.getData());
         String group = in.readUTF();
 
+        String target = in.readUTF();
+
         int messageLength = in.readInt();
         byte[] messageData = new byte[messageLength];
         in.readFully(messageData);
@@ -67,14 +69,26 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
                     sendToAllAndQueue(event.getData(), null);
                     break;
                 case OTHERS_WITH_PLAYERS:
-                    sendToAllWithPlayers(event.getData(), ((ProxiedPlayer) event.getSender()).getServer());
+                    sendToAllWithPlayers(event.getData(), ((ProxiedPlayer) event.getSender()).getServer().getInfo());
                     break;
                 case OTHERS_QUEUE:
-                    sendToAllAndQueue(event.getData(), ((ProxiedPlayer) event.getSender()).getServer());
+                    sendToAllAndQueue(event.getData(), ((ProxiedPlayer) event.getSender()).getServer().getInfo());
                     break;
                 case PROXY:
                 case ALL_PROXIES:
                     handle((ProxiedPlayer) event.getReceiver(), message);
+                    break;
+                case SERVER:
+                    if (!target.isEmpty()) {
+                        ServerInfo server = getTargetServer(target);
+                        if (server != null) {
+                            server.sendData(plugin.getMessageChannel(), event.getData(), true);
+                        } else {
+                            plugin.logError(target + " doesn't exist?");
+                        }
+                    } else {
+                        plugin.logError(message.getTarget() + " message target requires explicit target!");
+                    }
                     break;
                 default:
                     plugin.logError("Receiving " + message.getTarget() + " is not supported!");
@@ -86,24 +100,24 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
         }
     }
 
-    private void sendToAllWithPlayers(byte[] data, Server excludedServer) {
+    private void sendToAllWithPlayers(byte[] data, ServerInfo excludedServer) {
         sendToAll(data, false, excludedServer);
     }
 
-    private void sendToAllAndQueue(byte[] data, Server excludedServer) {
+    private void sendToAllAndQueue(byte[] data, ServerInfo excludedServer) {
         sendToAll(data, true, excludedServer);
     }
 
-    private void sendToAll(byte[] data, boolean queue, Server excludedServer) {
+    private void sendToAll(byte[] data, boolean queue, ServerInfo excludedServer) {
         for (ServerInfo server : plugin.getProxy().getServers().values()) {
-            if (excludedServer == null || excludedServer.getInfo() != server) {
+            if (excludedServer == null || excludedServer != server) {
                 server.sendData(plugin.getMessageChannel(), data, queue);
             }
         }
     }
 
     @Override
-    public void sendDataImplementation(ProxiedPlayer player, Message message) {
+    public void sendDataImplementation(String targetData, Message message) {
         byte[] messageData = message.writeToByteArray(plugin);
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -111,6 +125,8 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
         out.writeInt(messageData.length);
         out.write(messageData);
         byte[] dataToSend = out.toByteArray();
+
+        ServerInfo server = getTargetServer(targetData);
 
         switch (message.getTarget()) {
             case ALL_WITH_PLAYERS:
@@ -120,16 +136,16 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
                 sendToAllAndQueue(dataToSend, null);
                 break;
             case OTHERS_WITH_PLAYERS:
-                sendToAllWithPlayers(dataToSend, player.getServer());
+                sendToAllWithPlayers(dataToSend, server);
                 break;
             case OTHERS_QUEUE:
-                sendToAllAndQueue(dataToSend, player.getServer());
+                sendToAllAndQueue(dataToSend, server);
                 break;
             case SERVER:
-                if (player != null) {
-                    player.getServer().sendData(plugin.getMessageChannel(), dataToSend);
+                if (server != null) {
+                    server.sendData(plugin.getMessageChannel(), dataToSend);
                 } else {
-                    throw new UnsupportedOperationException("Could not send data to " + message.getTarget() + " as player wasn't specified!");
+                    throw new UnsupportedOperationException("Could not send data to " + message.getTarget() + " as target server wasn't found from " + targetData + "!");
                 }
                 break;
             default:

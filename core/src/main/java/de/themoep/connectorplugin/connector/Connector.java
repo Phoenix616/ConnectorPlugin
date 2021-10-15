@@ -29,6 +29,8 @@ import java.util.function.BiConsumer;
 public abstract class Connector<P extends ConnectorPlugin, R> {
     protected final P plugin;
 
+    public static final String SERVER_PREFIX = "server:";
+
     private Table<String, String, BiConsumer<R, byte[]>> handlers = HashBasedTable.create();
 
     public Connector(P plugin) {
@@ -49,7 +51,6 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
                 }
                 break;
             case PROXY:
-            case SERVER:
                 if (receiver == null) {
                     return;
                 }
@@ -72,7 +73,7 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
      * @param data      The data
      */
     public void sendData(ConnectingPlugin sender, String action, MessageTarget target, byte[] data) {
-        sendData(sender, action, target, null, data);
+        sendData(sender, action, target, (String) null, data);
     }
 
     /**
@@ -84,14 +85,30 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
      * @param data      The data
      */
     public void sendData(ConnectingPlugin sender, String action, MessageTarget target, R player, byte[] data) {
+        sendDataInternal(sender, action, target, player, data);
+    }
+
+    /**
+     * Send data to a specific target
+     * @param sender    The plugin which sends the data
+     * @param action    The action for which data is sent
+     * @param target    Where to send data to
+     * @param server    Additional data to use for sending (required in case the target is {@link MessageTarget#SERVER})
+     * @param data      The data
+     */
+    public void sendData(ConnectingPlugin sender, String action, MessageTarget target, String server, byte[] data) {
+        sendDataInternal(sender, action, target, server, data);
+    }
+
+    public void sendDataInternal(ConnectingPlugin sender, String action, MessageTarget target, Object targetData, byte[] data) {
         if (target.getSource() != null && target.getSource() != plugin.getSourceType()) {
             throw new UnsupportedOperationException("Cannot send message with target " + target + " from " + plugin.getSourceType());
         }
 
-        sendDataImplementation(player, new Message(target, plugin.getServerName(), sender.getName(), action, data));
+        sendDataImplementation(targetData, new Message(target, plugin.getServerName(), sender.getName(), action, data));
     }
 
-    protected abstract void sendDataImplementation(R player, Message message);
+    protected abstract void sendDataImplementation(Object targetData, Message message);
 
     protected abstract R getReceiver(String name);
 

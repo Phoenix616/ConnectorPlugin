@@ -36,13 +36,13 @@ public class MqttConnector extends BungeeConnector {
                 plugin.getConfig().getString("mqtt.username"),
                 plugin.getConfig().getString("mqtt.password"),
                 plugin.getConfig().getInt("mqtt.keep-alive"),
-                (receiver, message) -> handle(receiver.isEmpty() ? null : getReceiver(receiver), message)
+                (target, message) -> handle(getReceiver(target), message)
         );
     }
 
     @Override
-    protected void sendDataImplementation(ProxiedPlayer player, Message message) {
-        connection.sendMessage(player != null ? player.getName() : "", message);
+    protected void sendDataImplementation(String targetData, Message message) {
+        connection.sendMessage(targetData, message);
     }
 
     @Override

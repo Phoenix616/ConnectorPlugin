@@ -41,8 +41,8 @@ public class MqttConnector extends BukkitConnector {
     }
 
     @Override
-    protected void sendDataImplementation(Player player, Message message) {
-        connection.sendMessage(player != null ? player.getName() : "", message);
+    protected void sendDataImplementation(String targetData, Message message) {
+        connection.sendMessage(targetData, message);
     }
 
     @Override

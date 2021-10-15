@@ -45,4 +45,11 @@ public abstract class BukkitConnector extends Connector<BukkitConnectorPlugin, P
         super.handle(receiver, message);
     }
 
+    @Override
+    protected void sendDataImplementation(Object targetData, Message message) {
+        sendDataImplementation(targetData instanceof Player ? ((Player) targetData).getName() : targetData instanceof String ? SERVER_PREFIX + targetData : "", message);
+    }
+
+    protected abstract void sendDataImplementation(String targetData, Message message);
+
 }
