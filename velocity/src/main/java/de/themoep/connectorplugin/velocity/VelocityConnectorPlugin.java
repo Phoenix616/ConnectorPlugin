@@ -59,6 +59,9 @@ public final class VelocityConnectorPlugin implements ConnectorPlugin {
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
         config = new PluginConfig(this, new File(dataFolder, "config.yml"), "velocity-config.yml");
+        if (!config.load()) {
+            return;
+        }
 
         debug = getConfig().getBoolean("debug");
         serverId = getConfig().getString("server-id");
