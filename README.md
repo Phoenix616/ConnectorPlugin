@@ -29,22 +29,32 @@ This includes a bridging utility and some basic commands to use the provided uti
 > *Aliases:* `connector`, `connectorcommand`, `connplugin`, `cp` 
 > 
 >> `teleport <player> <server> [<world> <x> <y> <z> [<yaw> <pitch>]]`  
+>> Teleport a player to the specified server and/or location  
 >> *Permission:* `connectorplugin.command.teleport`  
 >> *Aliases:* `tp`, `send`
 > 
 >> `teleporttoplayer <player> [<targetplayer>]`  
+>> Teleport yourself to the player or the player to the target player   
 >> *Permission:* `connectorplugin.command.teleporttoplayer`  
 >> *Aliases:* `teleportplayer`, `tpp`
 >
 >> `servercommand <server> <command>...`  
+>> Executes command in the console of the specified server   
+>> *Permission:* `connectorplugin.command.servercommand`  
+>> *Aliases:* `serverconsole`, `serverconsolecommand`, `server`, `scc`
+>
+>> `servercommand p:<player> <command>...`  
+>> Executes command in the console of the server the player is connected to  
 >> *Permission:* `connectorplugin.command.servercommand`  
 >> *Aliases:* `serverconsole`, `serverconsolecommand`, `server`, `scc`
 >
 >> `proxycommand <command>...`  
+>> Execute a command on all other proxies  
 >> *Permission:* `connectorplugin.command.proxycommand`  
 >> *Aliases:* `proxyconsole`, `proxyconsolecommand`, `proxy`, `pcc`
 > 
 >> `proxyplayercommand <player> <command>...`  
+>> Execute a command as a player on the proxy they are connected to  
 >> *Permission:* `connectorplugin.command.proxyplayercommand`  
 >> *Aliases:* `proxyplayer`, `player`, `ppc`
 
@@ -64,22 +74,32 @@ This includes a bridging utility and some basic commands to use the provided uti
 
 ### Proxy sub commands
 >> `teleport <player> <server> [<world> <x> <y> <z> [<yaw> <pitch>]]`  
+>> Teleport a player to the specified server and/or location  
 >> *Permission:* `connectorplugin.command.teleport`  
 >> *Aliases:* `tp`, `send`
 >
 >> `teleporttoplayer <player> [<targetplayer>]`  
+>> Teleport yourself to the player or the player to the target player   
 >> *Permission:* `connectorplugin.command.teleporttoplayer`  
 >> *Aliases:* `teleportplayer`, `tpp`
 >
 >> `servercommand <server> <command>...`  
+>> Executes command in the console of the specified server   
 >> *Permission:* `connectorplugin.command.servercommand`  
 >> *Aliases:* `serverconsole`, `serverconsolecommand`, `server`, `scc`
 > 
+>> `servercommand p:<player> <command>...`  
+>> Executes command in the console of the server the player is connected to  
+>> *Permission:* `connectorplugin.command.servercommand`  
+>> *Aliases:* `serverconsole`, `serverconsolecommand`, `server`, `scc`  
+> 
 >> `serverplayercommand <player> <command>...`  
+>> Execute a command as the target player on their server  
 >> *Permission:* `connectorplugin.command.serverplayercommand`  
 >> *Aliases:* `serverplayer`, `player`, `spc`
 > 
 >> `proxycommand <command>...`  
+>> Execute a command on all other proxies  
 >> *Permission:* `connectorplugin.command.proxycommand`  
 >> *Aliases:* `proxyconsole`, `proxyconsolecommand`, `proxy`, `pcc`
 

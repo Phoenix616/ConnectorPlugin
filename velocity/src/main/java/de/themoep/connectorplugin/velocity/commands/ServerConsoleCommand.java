@@ -19,6 +19,7 @@ package de.themoep.connectorplugin.velocity.commands;
  */
 
 import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.proxy.Player;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -27,12 +28,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ServerConsoleCommand extends SubCommand {
 
     public ServerConsoleCommand(ConnectorCommand parent) {
-        super(parent.getPlugin(), "servercommand <servername> <command...>", parent.getPermission() + ".servercommand", "serverconsole", "serverconsolecommand", "server", "scc");
+        super(parent.getPlugin(), "servercommand <servername|p:player> <command...>", parent.getPermission() + ".servercommand", "serverconsole", "serverconsolecommand", "server", "scc");
     }
 
     @Override
@@ -42,6 +44,20 @@ public class ServerConsoleCommand extends SubCommand {
         }
 
         String serverName = args[0];
+        if (serverName.startsWith("p:")) {
+            Optional<Player> player = plugin.getProxy().getPlayer(serverName.substring(2));
+            if (player.isPresent()) {
+                if (player.get().getCurrentServer().isPresent()) {
+                    serverName = player.get().getCurrentServer().get().getServerInfo().getName();
+                } else {
+                    sender.sendMessage(Component.text("Player '" + player.get().getUsername() + "' is not connected to any server?").color(NamedTextColor.RED));
+                    return false;
+                }
+            } else {
+                sender.sendMessage(Component.text("The player '" + serverName.substring(2) + "' is not online?").color(NamedTextColor.RED));
+                return false;
+            }
+        } else
         if (!plugin.getProxy().getServer(serverName).isPresent()) {
             sender.sendMessage(Component.text("There is no server with the name of '" + serverName + "' on the proxy. Trying to send command anyways...").color(NamedTextColor.GRAY));
         }

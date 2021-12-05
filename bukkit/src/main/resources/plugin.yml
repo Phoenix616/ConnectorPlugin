@@ -7,7 +7,7 @@ commands:
   connectorplugin:
     description: Connector plugin command
     permission: connectorplugin.command
-    usage: /<command> teleport|teleportoplayer|servercommand <server>|proxyplayercommand <player>|proxycommand <command...>
+    usage: /<command> teleport|teleportoplayer|servercommand <server|p:player>|proxyplayercommand <player>|proxycommand <command...>
     aliases:
     - connector
     - connectorcommand

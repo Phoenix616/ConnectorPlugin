@@ -1,4 +1,6 @@
-package de.themoep.connectorplugin.velocity;/*
+package de.themoep.connectorplugin.velocity;
+
+/*
  * ConnectorPlugin
  * Copyright (C) 2021 Max Lee aka Phoenix616 (max@themoep.de)
  *

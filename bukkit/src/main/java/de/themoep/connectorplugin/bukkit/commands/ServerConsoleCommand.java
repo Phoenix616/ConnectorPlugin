@@ -23,16 +23,14 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class ServerConsoleCommand extends SubCommand {
 
     public ServerConsoleCommand(ConnectorCommand parent) {
-        super(parent.getPlugin(), "servercommand <servername> <command...>", parent.getPermission() + ".servercommand", "serverconsole", "serverconsolecommand", "server", "scc");
+        super(parent.getPlugin(), "servercommand <servername|p:player> <command...>", parent.getPermission() + ".servercommand", "serverconsole", "serverconsolecommand", "server", "scc");
     }
 
     @Override

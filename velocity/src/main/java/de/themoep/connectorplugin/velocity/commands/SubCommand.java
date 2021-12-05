@@ -1,4 +1,5 @@
 package de.themoep.connectorplugin.velocity.commands;
+
 /*
  * ConnectorPlugin
  * Copyright (C) 2021 Max Lee aka Phoenix616 (max@themoep.de)

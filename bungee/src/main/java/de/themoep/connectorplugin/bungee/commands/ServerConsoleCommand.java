@@ -20,6 +20,7 @@ package de.themoep.connectorplugin.bungee.commands;
 
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
 public class ServerConsoleCommand extends SubCommand {
 
     public ServerConsoleCommand(ConnectorCommand parent) {
-        super(parent.getPlugin(), "servercommand <servername> <command...>", parent.getPermission() + ".servercommand", "serverconsole", "serverconsolecommand", "server", "scc");
+        super(parent.getPlugin(), "servercommand <servername|p:player> <command...>", parent.getPermission() + ".servercommand", "serverconsole", "serverconsolecommand", "server", "scc");
     }
 
     @Override
@@ -39,7 +40,20 @@ public class ServerConsoleCommand extends SubCommand {
         }
 
         String serverName = args[0];
-        if (plugin.getProxy().getServerInfo(serverName) == null) {
+        if (serverName.startsWith("p:")) {
+            ProxiedPlayer player = plugin.getProxy().getPlayer(serverName.substring(2));
+            if (player != null) {
+                if (player.getServer() != null) {
+                    serverName = player.getServer().getInfo().getName();
+                } else {
+                    sender.sendMessage(ChatColor.RED + "Player '" + player.getName() + "' is not connected to any server?");
+                    return false;
+                }
+            } else {
+                sender.sendMessage(ChatColor.RED + "The player '" + serverName.substring(2) + "' is not online?");
+                return false;
+            }
+        } else if (plugin.getProxy().getServerInfo(serverName) == null) {
             sender.sendMessage(ChatColor.GRAY + "There is no server with the name of '" + serverName + "' on the proxy. Trying to send command anyways...");
         }
         String commandString = Arrays.stream(args).skip(1).collect(Collectors.joining(" "));

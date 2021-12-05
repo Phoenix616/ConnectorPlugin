@@ -167,7 +167,12 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             String targetServer = in.readUTF();
-            if (!targetServer.equals(plugin.getServerName())) {
+            if (targetServer.startsWith("p:")) {
+                Player player = plugin.getServer().getPlayer(targetServer.substring(2));
+                if (player == null) {
+                    return;
+                }
+            } else if (!targetServer.equals(plugin.getServerName())) {
                 return;
             }
             long id = in.readLong();
