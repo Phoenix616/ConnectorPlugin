@@ -305,24 +305,7 @@ public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
         location.write(out);
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
-        plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.ALL_QUEUE, out.toByteArray());
-
-
-        if (!player.getCurrentServer().isPresent() || !player.getCurrentServer().get().getServer().equals(server)) {
-            plugin.logDebug("Sending '" + playerName + "' to server '" + server.getServerInfo().getName() + "'");
-
-            player.createConnectionRequest(server).connect().thenAccept(result -> {
-                if (!result.isSuccessful()) {
-                    future.complete(false);
-                    result.getReasonComponent().ifPresent(component -> {
-                        String reason = LegacyComponentSerializer.legacyAmpersand().serialize(component);
-                        for (Consumer<String> c : consumer) {
-                            c.accept(reason);
-                        }
-                    });
-                }
-            });
-        }
+        plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.SERVER, server.getServerInfo().getName(), out.toByteArray());
 
         return future;
     }
@@ -374,24 +357,7 @@ public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
         out.writeUTF(target.getUsername());
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
-        plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_PLAYER, MessageTarget.SERVER, target, out.toByteArray());
-
-
-        if (!player.getCurrentServer().isPresent() || !player.getCurrentServer().get().getServer().equals(target.getCurrentServer().get().getServer())) {
-            plugin.logDebug("Sending '" + player.getUsername() + "' to server of player '" + target.getUsername() + "' (" + target.getCurrentServer().get().getServerInfo().getName() + ")");
-
-            player.createConnectionRequest(target.getCurrentServer().get().getServer()).connect().thenAccept(result -> {
-                if (!result.isSuccessful()) {
-                    future.complete(false);
-                    result.getReasonComponent().ifPresent(component -> {
-                        String reason = LegacyComponentSerializer.legacyAmpersand().serialize(component);
-                        for (Consumer<String> c : consumer) {
-                            c.accept(reason);
-                        }
-                    });
-                }
-            });
-        }
+        plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_QUEUE, out.toByteArray());
 
         return future;
     }

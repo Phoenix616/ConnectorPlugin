@@ -26,7 +26,6 @@ import de.themoep.connectorplugin.bungee.BungeeConnectorPlugin;
 import de.themoep.connectorplugin.connector.VersionMismatchException;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.connection.Server;
 import net.md_5.bungee.api.event.PluginMessageEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
@@ -36,7 +35,7 @@ import java.util.logging.Level;
 public class PluginMessageConnector extends BungeeConnector implements Listener {
 
     public PluginMessageConnector(BungeeConnectorPlugin plugin) {
-        super(plugin);
+        super(plugin, true);
         plugin.getProxy().registerChannel(plugin.getMessageChannel());
     }
 

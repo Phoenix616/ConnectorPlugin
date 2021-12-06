@@ -25,8 +25,8 @@ import org.bukkit.entity.Player;
 
 public abstract class BukkitConnector extends Connector<BukkitConnectorPlugin, Player> {
 
-    public BukkitConnector(BukkitConnectorPlugin plugin) {
-        super(plugin);
+    public BukkitConnector(BukkitConnectorPlugin plugin, boolean requiresPlayer) {
+        super(plugin, requiresPlayer);
     }
 
     protected Player getReceiver(String name) {

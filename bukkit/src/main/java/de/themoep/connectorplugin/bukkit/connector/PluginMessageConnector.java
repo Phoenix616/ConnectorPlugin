@@ -41,7 +41,7 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
     private Deque<byte[]> queue = new ArrayDeque<>();
 
     public PluginMessageConnector(BukkitConnectorPlugin plugin) {
-        super(plugin);
+        super(plugin, true);
         plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, plugin.getMessageChannel());
         plugin.getServer().getMessenger().registerIncomingPluginChannel(plugin, plugin.getMessageChannel(), this);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);

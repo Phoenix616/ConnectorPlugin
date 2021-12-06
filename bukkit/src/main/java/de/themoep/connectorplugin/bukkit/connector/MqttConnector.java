@@ -21,14 +21,12 @@ package de.themoep.connectorplugin.bukkit.connector;
 import de.themoep.connectorplugin.bukkit.BukkitConnectorPlugin;
 import de.themoep.connectorplugin.connector.Message;
 import de.themoep.connectorplugin.connector.MqttConnection;
-import de.themoep.connectorplugin.connector.RedisConnection;
-import org.bukkit.entity.Player;
 
 public class MqttConnector extends BukkitConnector {
     private final MqttConnection connection;
 
     public MqttConnector(BukkitConnectorPlugin plugin) {
-        super(plugin);
+        super(plugin, false);
         connection = new MqttConnection(
                 plugin,
                 plugin.getConfig().getString("mqtt.broker-uri"),

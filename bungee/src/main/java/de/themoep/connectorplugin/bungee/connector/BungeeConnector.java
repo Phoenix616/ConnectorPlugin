@@ -26,8 +26,8 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 public abstract class BungeeConnector extends Connector<BungeeConnectorPlugin, ProxiedPlayer> {
 
-    public BungeeConnector(BungeeConnectorPlugin plugin) {
-        super(plugin);
+    public BungeeConnector(BungeeConnectorPlugin plugin, boolean requiresPlayer) {
+        super(plugin, requiresPlayer);
     }
 
     protected ProxiedPlayer getReceiver(String name) {

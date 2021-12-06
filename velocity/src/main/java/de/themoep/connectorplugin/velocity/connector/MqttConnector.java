@@ -26,7 +26,7 @@ public class MqttConnector extends VelocityConnector {
     private final MqttConnection connection;
 
     public MqttConnector(VelocityConnectorPlugin plugin) {
-        super(plugin);
+        super(plugin, false);
         connection = new MqttConnection(
                 plugin,
                 plugin.getConfig().getString("mqtt.broker-uri"),

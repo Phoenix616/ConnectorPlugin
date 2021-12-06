@@ -40,7 +40,7 @@ public class PluginMessageConnector extends VelocityConnector {
     private final Multimap<String, byte[]> messageQueue = MultimapBuilder.hashKeys().linkedListValues().build();
 
     public PluginMessageConnector(VelocityConnectorPlugin plugin) {
-        super(plugin);
+        super(plugin, true);
         messageChannel = MinecraftChannelIdentifier.from(plugin.getMessageChannel());
         plugin.getProxy().getChannelRegistrar().register(messageChannel);
     }

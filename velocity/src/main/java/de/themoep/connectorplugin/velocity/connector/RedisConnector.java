@@ -26,7 +26,7 @@ public class RedisConnector extends VelocityConnector {
     private final RedisConnection connection;
 
     public RedisConnector(VelocityConnectorPlugin plugin) {
-        super(plugin);
+        super(plugin, false);
         connection = new RedisConnection(
                 plugin,
                 plugin.getConfig().getString("redis.uri"),

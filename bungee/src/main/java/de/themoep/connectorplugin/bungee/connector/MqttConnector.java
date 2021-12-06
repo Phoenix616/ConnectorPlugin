@@ -21,14 +21,12 @@ package de.themoep.connectorplugin.bungee.connector;
 import de.themoep.connectorplugin.bungee.BungeeConnectorPlugin;
 import de.themoep.connectorplugin.connector.Message;
 import de.themoep.connectorplugin.connector.MqttConnection;
-import de.themoep.connectorplugin.connector.RedisConnection;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 public class MqttConnector extends BungeeConnector {
     private final MqttConnection connection;
 
     public MqttConnector(BungeeConnectorPlugin plugin) {
-        super(plugin);
+        super(plugin, false);
         connection = new MqttConnection(
                 plugin,
                 plugin.getConfig().getString("mqtt.broker-uri"),

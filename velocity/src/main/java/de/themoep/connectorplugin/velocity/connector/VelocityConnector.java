@@ -26,8 +26,8 @@ import de.themoep.connectorplugin.connector.Connector;
 
 public abstract class VelocityConnector extends Connector<VelocityConnectorPlugin, Player> {
 
-    public VelocityConnector(VelocityConnectorPlugin plugin) {
-        super(plugin);
+    public VelocityConnector(VelocityConnectorPlugin plugin, boolean requiresPlayer) {
+        super(plugin, requiresPlayer);
     }
 
     protected Player getReceiver(String name) {

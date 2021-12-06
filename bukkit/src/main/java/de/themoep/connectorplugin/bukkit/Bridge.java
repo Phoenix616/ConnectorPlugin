@@ -1,4 +1,6 @@
-package de.themoep.connectorplugin.bukkit;/*
+package de.themoep.connectorplugin.bukkit;
+
+/*
  * ConnectorPlugin
  * Copyright (C) 2021 Max Lee aka Phoenix616 (max@themoep.de)
  *
@@ -99,6 +101,13 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
                 });
             } else {
                 loginRequests.put(playerName.toLowerCase(Locale.ROOT), new LocationTeleportRequest(senderServer, id, location));
+                if (!plugin.getConnector().requiresPlayer() || !plugin.getServer().getOnlinePlayers().isEmpty()) {
+                    plugin.getBridge().sendToServer(playerName, location.getServer(),
+                            messages -> sendResponseMessage(senderServer, id, messages)
+                    ).whenComplete((success, ex) -> {
+                        sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                    });
+                }
             }
         });
 
@@ -109,19 +118,23 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             String playerName = in.readUTF();
             String targetName = in.readUTF();
 
-            Player player = plugin.getServer().getPlayer(playerName);
-            if (player != null) {
-                Player target = plugin.getServer().getPlayer(targetName);
-                if (target != null) {
-                    PaperLib.teleportAsync(player, target.getLocation()).whenComplete((success, ex) -> {
-                        sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
-                    });
+            Player target = plugin.getServer().getPlayer(targetName);
+            if (target != null) {
+                Player player = plugin.getServer().getPlayer(playerName);
+                if (player != null) {
+                        PaperLib.teleportAsync(player, target.getLocation()).whenComplete((success, ex) -> {
+                            sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                        });
                 } else {
-                    PaperLib.teleportAsync(player, plugin.getServer().getWorlds().get(0).getSpawnLocation());
-                    sendResponse(senderServer, id, false, "Target player " + target.getName() + " not online!");
+                    loginRequests.put(playerName.toLowerCase(Locale.ROOT), new PlayerTeleportRequest(senderServer, id, targetName));
+                    if (!plugin.getConnector().requiresPlayer() || !plugin.getServer().getOnlinePlayers().isEmpty()) {
+                        plugin.getBridge().sendToServer(playerName, plugin.getServerName(),
+                                messages -> sendResponseMessage(senderServer, id, messages)
+                        ).whenComplete((success, ex) -> {
+                            sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                        });
+                    }
                 }
-            } else {
-                loginRequests.put(playerName.toLowerCase(Locale.ROOT), new PlayerTeleportRequest(senderServer, id, targetName));
             }
         });
 
@@ -245,7 +258,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
                 Player target = plugin.getServer().getPlayer(((PlayerTeleportRequest) request).targetName);
                 if (target == null) {
                     event.setSpawnLocation(plugin.getServer().getWorlds().get(0).getSpawnLocation());
-                    sendResponse(request.server, request.id, false, "Target player " + ((PlayerTeleportRequest) request).targetName + " was not oonline?");
+                    sendResponse(request.server, request.id, false, "Target player " + ((PlayerTeleportRequest) request).targetName + " is no longer online?");
                 } else {
                     event.setSpawnLocation(target.getLocation());
                     sendResponse(request.server, request.id, true, "Player login location changed to " + target.getName() + "'s location");

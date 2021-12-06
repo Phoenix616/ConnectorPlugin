@@ -21,13 +21,12 @@ package de.themoep.connectorplugin.bungee.connector;
 import de.themoep.connectorplugin.bungee.BungeeConnectorPlugin;
 import de.themoep.connectorplugin.connector.Message;
 import de.themoep.connectorplugin.connector.RedisConnection;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 public class RedisConnector extends BungeeConnector {
     private final RedisConnection connection;
 
     public RedisConnector(BungeeConnectorPlugin plugin) {
-        super(plugin);
+        super(plugin, false);
         connection = new RedisConnection(
                 plugin,
                 plugin.getConfig().getString("redis.uri"),

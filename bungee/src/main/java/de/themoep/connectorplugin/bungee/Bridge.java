@@ -301,9 +301,9 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         location.write(out);
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
-        plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.ALL_QUEUE, out.toByteArray());
+        plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.SERVER, server.getName(), out.toByteArray());
 
-        if (!player.getServer().getInfo().equals(server)) {
+        if (!player.getServer().getInfo().equals(server) && plugin.getConnector().requiresPlayer() && server.getPlayers().isEmpty()) {
             plugin.logDebug("Sending '" + player.getName() + "' to server '" + server.getName() + "'");
 
             player.connect(server, (success, ex) -> {
@@ -366,9 +366,9 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         out.writeUTF(target.getName());
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
-        plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_PLAYER, MessageTarget.SERVER, target, out.toByteArray());
+        plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_QUEUE, out.toByteArray());
 
-        if (!player.getServer().getInfo().equals(target.getServer().getInfo())) {
+        if (!player.getServer().getInfo().equals(target.getServer().getInfo()) && plugin.getConnector().requiresPlayer() && target.getServer().getInfo().getPlayers().isEmpty()) {
             plugin.logDebug("Sending '" + player.getName() + "' to server of player '" + target.getName() + "' (" + target.getServer().getInfo().getName() + ")");
 
             player.connect(target.getServer().getInfo(), (success, ex) -> {

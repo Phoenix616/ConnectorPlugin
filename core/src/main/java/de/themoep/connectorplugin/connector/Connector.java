@@ -31,10 +31,13 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
 
     public static final String SERVER_PREFIX = "server:";
 
+    private final boolean requiresPlayer;
+
     private Table<String, String, BiConsumer<R, byte[]>> handlers = HashBasedTable.create();
 
-    public Connector(P plugin) {
+    public Connector(P plugin, boolean requiresPlayer) {
         this.plugin = plugin;
+        this.requiresPlayer = requiresPlayer;
     }
 
     protected void handle(R receiver, Message message) {
@@ -140,6 +143,14 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
      */
     public Map<String, BiConsumer<R, byte[]>> unregisterHandlers(ConnectingPlugin plugin) {
         return handlers.rowMap().remove(plugin.getName().toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * Whether this connector requires a player on the target server. (Mostly for plugin message usage)
+     * @return Whether this connector requires at least one player on the target server
+     */
+    public boolean requiresPlayer() {
+        return requiresPlayer;
     }
 
     public void close() {};
