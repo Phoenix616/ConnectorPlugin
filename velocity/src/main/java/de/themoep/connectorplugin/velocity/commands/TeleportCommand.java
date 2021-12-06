@@ -37,7 +37,7 @@ public class TeleportCommand extends SubCommand {
     }
 
     @Override
-    public boolean run(CommandSource sender, String[] args) {
+    public boolean run(CommandSource sender, String alias, String[] args) {
         if (args.length < 2) {
             return false;
         }

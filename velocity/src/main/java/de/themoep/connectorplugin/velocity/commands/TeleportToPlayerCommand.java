@@ -35,7 +35,7 @@ public class TeleportToPlayerCommand extends SubCommand {
     }
 
     @Override
-    public boolean run(CommandSource sender, String[] args) {
+    public boolean run(CommandSource sender, String alias, String[] args) {
         String playerName;
         String targetName;
         if (args.length == 1 && sender instanceof Player) {

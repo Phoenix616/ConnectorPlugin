@@ -50,8 +50,9 @@ public abstract class SubCommand implements CommandMeta, SimpleCommand {
 
     public SubCommand(VelocityConnectorPlugin plugin, String usage, String permission, String... aliases) {
         this.plugin = plugin;
-        this.name = usage.split(" ", 2)[0];
-        this.usage = "/" + usage;
+        String[] usageParts = usage.split(" ", 2);
+        this.name = usageParts[0];
+        this.usage = usageParts.length > 1 ? usageParts[1] : "";
         this.permission = permission;
         this.aliases = new ArrayList<>();
         this.aliases.add(name);
@@ -75,18 +76,18 @@ public abstract class SubCommand implements CommandMeta, SimpleCommand {
 
     @Override
     public void execute(Invocation invocation) {
-        if (!run(invocation.source(), invocation.arguments()) && getUsage() != null) {
-            invocation.source().sendMessage(Component.text(getUsage()));
+        if (!run(invocation.source(), invocation.alias(), invocation.arguments()) && getUsage() != null) {
+            invocation.source().sendMessage(Component.text("Usage: /" + invocation.alias() + " " + getUsage()));
         }
     }
 
-    public boolean run(CommandSource sender, String[] args) {
+    public boolean run(CommandSource sender, String alias, String[] args) {
         if (args.length == 0) {
             return false;
         }
         SubCommand subCommand = getSubCommand(args[0]);
         if (subCommand != null) {
-            subCommand.execute(new SubInvocation(sender, args[0], Arrays.copyOfRange(args, 1, args.length)));
+            subCommand.execute(new SubInvocation(sender, alias + " " + args[0], Arrays.copyOfRange(args, 1, args.length)));
             return true;
         }
         return false;

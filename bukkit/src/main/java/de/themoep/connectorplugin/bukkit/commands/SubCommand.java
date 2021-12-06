@@ -71,10 +71,10 @@ public abstract class SubCommand implements TabExecutor {
         SubCommand subCommand = getSubCommand(args[0]);
         if (subCommand != null) {
             if (sender.hasPermission(subCommand.getPermission())) {
-                if (subCommand.onCommand(sender, command, label, Arrays.copyOfRange(args, 1, args.length))) {
+                if (subCommand.onCommand(sender, command, label + " " + args[0], Arrays.copyOfRange(args, 1, args.length))) {
                     return true;
                 } else if (!subCommand.getUsage().isEmpty()) {
-                    sender.sendMessage("Usage: /" + label + " " + subCommand.getUsage());
+                    sender.sendMessage("Usage: /" + label + " " + args[0] + " " + subCommand.getUsage());
                     return true;
                 }
             }
