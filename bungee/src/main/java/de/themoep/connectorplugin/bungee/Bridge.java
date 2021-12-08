@@ -33,6 +33,7 @@ import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.connection.Server;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.TabExecutor;
@@ -303,18 +304,7 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         consumers.put(id, consumer);
         plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.SERVER, server.getName(), out.toByteArray());
 
-        if (!player.getServer().getInfo().equals(server) && plugin.getConnector().requiresPlayer() && server.getPlayers().isEmpty()) {
-            plugin.logDebug("Sending '" + player.getName() + "' to server '" + server.getName() + "'");
-
-            player.connect(server, (success, ex) -> {
-                if (!success) {
-                    future.complete(false);
-                    for (Consumer<String> c : consumer) {
-                        c.accept(ex.getMessage());
-                    }
-                }
-            });
-        }
+        sendToServerIfNecessary(player, server, future, consumer);
 
         return future;
     }
@@ -368,10 +358,16 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         consumers.put(id, consumer);
         plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_QUEUE, out.toByteArray());
 
-        if (!player.getServer().getInfo().equals(target.getServer().getInfo()) && plugin.getConnector().requiresPlayer() && target.getServer().getInfo().getPlayers().isEmpty()) {
-            plugin.logDebug("Sending '" + player.getName() + "' to server of player '" + target.getName() + "' (" + target.getServer().getInfo().getName() + ")");
+        sendToServerIfNecessary(player, target.getServer().getInfo(), future, consumer);
 
-            player.connect(target.getServer().getInfo(), (success, ex) -> {
+        return future;
+    }
+
+    private void sendToServerIfNecessary(ProxiedPlayer player, ServerInfo server, CompletableFuture<Boolean> future, Consumer<String>... consumer) {
+        if (!player.getServer().getInfo().equals(server) && plugin.getConnector().requiresPlayer() && server.getPlayers().isEmpty()) {
+            plugin.logDebug("Sending '" + player.getName() + "' to server '" + server.getName() + "'");
+
+            player.connect(server, (success, ex) -> {
                 if (!success) {
                     future.complete(false);
                     if (ex != null) {
@@ -382,8 +378,6 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
                 }
             });
         }
-
-        return future;
     }
 
     /**

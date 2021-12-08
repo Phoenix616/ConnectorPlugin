@@ -307,6 +307,8 @@ public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
         consumers.put(id, consumer);
         plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.SERVER, server.getServerInfo().getName(), out.toByteArray());
 
+        sendToServerIfNecessary(player, server, future, consumer);
+
         return future;
     }
 
@@ -359,7 +361,28 @@ public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
         consumers.put(id, consumer);
         plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_QUEUE, out.toByteArray());
 
+        sendToServerIfNecessary(player, target.getCurrentServer().get().getServer(), future, consumer);
+
         return future;
+    }
+
+    private void sendToServerIfNecessary(Player player, RegisteredServer server, CompletableFuture<Boolean> future, Consumer<String>... consumer) {
+        if ((!player.getCurrentServer().isPresent() || !player.getCurrentServer().get().getServer().equals(server))
+                && plugin.getConnector().requiresPlayer() && server.getPlayersConnected().isEmpty()) {
+            plugin.logDebug("Sending '" + player.getUsername() + "' to server '" + server.getServerInfo().getName() + "'");
+
+            player.createConnectionRequest(server).connect().thenAccept(result -> {
+                if (!result.isSuccessful()) {
+                    future.complete(false);
+                    result.getReasonComponent().ifPresent(component -> {
+                        String reason = LegacyComponentSerializer.legacyAmpersand().serialize(component);
+                        for (Consumer<String> c : consumer) {
+                            c.accept(reason);
+                        }
+                    });
+                }
+            });
+        }
     }
 
     /**
