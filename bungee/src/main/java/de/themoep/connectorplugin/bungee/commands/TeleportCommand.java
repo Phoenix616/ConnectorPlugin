@@ -62,6 +62,16 @@ public class TeleportCommand extends SubCommand {
             return true;
         }
 
+        if (args.length == 3) {
+            plugin.getBridge().teleport(player.getName(), server.getName(), args[2], sender::sendMessage)
+                    .thenAccept(success -> {
+                        if (!success) {
+                            sender.sendMessage(ChatColor.RED + "Error while teleporting...");
+                        }
+                    });
+            return true;
+        }
+
         if (args.length < 6) {
             return false;
         }
@@ -82,7 +92,7 @@ public class TeleportCommand extends SubCommand {
                         if (!success) {
                             sender.sendMessage(ChatColor.RED + "Error while teleporting...");
                         }
-            });
+                    });
             return true;
         } catch (IllegalArgumentException e) {
             sender.sendMessage(ChatColor.RED + "Error while parsing input! " + e.getMessage());

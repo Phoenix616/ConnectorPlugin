@@ -28,8 +28,8 @@ This includes a bridging utility and some basic commands to use the provided uti
 > *Permission:* `connectorplugin.command`  
 > *Aliases:* `connector`, `connectorcommand`, `connplugin`, `cp` 
 > 
->> `teleport <player> <server> [<world> <x> <y> <z> [<yaw> <pitch>]]`  
->> Teleport a player to the specified server and/or location  
+>> `teleport <player> <server> [<world> [<x> <y> <z> [<yaw> <pitch>]]]`  
+>> Teleport a player to the specified server/world/location   
 >> *Permission:* `connectorplugin.command.teleport`  
 >> *Aliases:* `tp`, `send`
 > 
@@ -73,8 +73,8 @@ This includes a bridging utility and some basic commands to use the provided uti
 >
 
 ### Proxy sub commands
->> `teleport <player> <server> [<world> <x> <y> <z> [<yaw> <pitch>]]`  
->> Teleport a player to the specified server and/or location  
+>> `teleport <player> <server> [<world> [<x> <y> <z> [<yaw> <pitch>]]]`  
+>> Teleport a player to the specified server/world/location  
 >> *Permission:* `connectorplugin.command.teleport`  
 >> *Aliases:* `tp`, `send`
 >

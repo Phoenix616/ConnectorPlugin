@@ -50,6 +50,16 @@ public class TeleportCommand extends SubCommand {
             return true;
         }
 
+        if (args.length == 3) {
+            plugin.getBridge().teleport(playerName, serverName, args[2], sender::sendMessage)
+                    .thenAccept(success -> {
+                        if (!success) {
+                            sender.sendMessage(ChatColor.RED + "Error while teleporting...");
+                        }
+                    });
+            return true;
+        }
+
         if (args.length < 6) {
             return false;
         }

@@ -33,7 +33,6 @@ import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.connection.Server;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.TabExecutor;
@@ -105,6 +104,18 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
             LocationInfo targetLocation = LocationInfo.read(in);
 
             teleport(playerName, targetLocation, messages -> sendResponseMessage(senderServer, id, messages))
+                    .thenAccept(success -> sendResponse(senderServer, id, success));
+        });
+
+        plugin.getConnector().registerHandler(plugin, Action.TELEPORT_TO_WORLD, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+            String targetServer = in.readUTF();
+            String targetWorld = in.readUTF();
+
+            teleport(playerName, targetServer, targetWorld, messages -> sendResponseMessage(senderServer, id, messages))
                     .thenAccept(success -> sendResponse(senderServer, id, success));
         });
 
@@ -303,6 +314,53 @@ public class Bridge extends BridgeCommon<BungeeConnectorPlugin> {
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
         plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.SERVER, server.getName(), out.toByteArray());
+
+        sendToServerIfNecessary(player, server, future, consumer);
+
+        return future;
+    }
+
+    /**
+     * Teleport a player to a certain location in the network
+     * @param playerName    The name of the player to teleport
+     * @param serverName    The target server
+     * @param worldName     The target world
+     * @param consumer      Details about the teleport
+     * @return A future about whether the player could be teleported
+     */
+    public CompletableFuture<Boolean> teleport(String playerName, String serverName, String worldName, Consumer<String>... consumer) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+
+        ProxiedPlayer player = plugin.getProxy().getPlayer(playerName);
+        if (player == null) {
+            plugin.logDebug("Could not find player " + playerName + " on this proxy to send to teleport to " + serverName + "/" + worldName);
+            future.complete(false);
+            for (Consumer<String> c : consumer) {
+                c.accept("Could not find player " + playerName + " on this proxy to teleport to " + serverName + "/" + worldName);
+            }
+            return future;
+        }
+
+        ServerInfo server = plugin.getProxy().getServerInfo(serverName);
+        if (server == null) {
+            plugin.logDebug("Could not find server " + serverName + " on this proxy to teleport player " + player.getName() + " to");
+            future.complete(false);
+            for (Consumer<String> c : consumer) {
+                c.accept("Could not find server " + serverName + " on this proxy to teleport player " + player.getName() + " to");
+            }
+            return future;
+        }
+
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(player.getName());
+        out.writeUTF(serverName);
+        out.writeUTF(worldName);
+        responses.put(id, new ResponseHandler.Boolean(future));
+        consumers.put(id, consumer);
+        plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_WORLD, MessageTarget.SERVER, server.getName(), out.toByteArray());
 
         sendToServerIfNecessary(player, server, future, consumer);
 

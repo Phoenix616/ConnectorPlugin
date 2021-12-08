@@ -65,6 +65,16 @@ public class TeleportCommand extends SubCommand {
             return true;
         }
 
+        if (args.length == 3) {
+            plugin.getBridge().teleport(player.getUsername(), server.getServerInfo().getName(), args[2], m -> sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize(m)))
+                    .thenAccept(success -> {
+                        if (!success) {
+                            sender.sendMessage(Component.text("Error while teleporting...").color(NamedTextColor.RED));
+                        }
+                    });
+            return true;
+        }
+
         if (args.length < 6) {
             return false;
         }
@@ -85,7 +95,7 @@ public class TeleportCommand extends SubCommand {
                         if (!success) {
                             sender.sendMessage(Component.text("Error while teleporting...").color(NamedTextColor.RED));
                         }
-            });
+                    });
             return true;
         } catch (IllegalArgumentException e) {
             sender.sendMessage(Component.text("Error while parsing input! " + e.getMessage()).color(NamedTextColor.RED));
