@@ -120,7 +120,7 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
 
     @Override
     public void sendDataImplementation(String targetData, Message message) {
-        byte[] messageData = message.writeToByteArray(plugin);
+        byte[] messageData = message.writeToByteArray();
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(plugin.getGroup());

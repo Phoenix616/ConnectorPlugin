@@ -46,14 +46,14 @@ import java.util.function.Consumer;
 
 import static de.themoep.connectorplugin.connector.Connector.PLAYER_PREFIX;
 
-public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
+public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlayer> {
 
     private Table<String, String, BridgedCommand<?, CommandSender>> commands = HashBasedTable.create();
 
     public Bridge(BungeeConnectorPlugin plugin) {
         super(plugin);
 
-        plugin.getConnector().registerHandler(plugin, Action.STARTED, (receiver, data) -> {
+        registerHandler(Action.STARTED, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
 
@@ -62,7 +62,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
             }
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.SEND_TO_SERVER, (receiver, data) -> {
+        registerHandler(Action.SEND_TO_SERVER, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -98,7 +98,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
             }
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.TELEPORT, (receiver, data) -> {
+        registerHandler(Action.TELEPORT, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -109,7 +109,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
                     .thenAccept(success -> sendResponse(senderServer, id, success));
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.TELEPORT_TO_WORLD, (receiver, data) -> {
+        registerHandler(Action.TELEPORT_TO_WORLD, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -121,7 +121,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
                     .thenAccept(success -> sendResponse(senderServer, id, success));
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.TELEPORT_TO_PLAYER, (receiver, data) -> {
+        registerHandler(Action.TELEPORT_TO_PLAYER, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -132,7 +132,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
                     .thenAccept(success -> sendResponse(senderServer, id, success));
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.GET_SERVER, (receiver, data) -> {
+        registerHandler(Action.GET_SERVER, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -146,7 +146,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
             }
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.GET_LOCATION, (receiver, data) -> {
+        registerHandler(Action.GET_LOCATION, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -160,7 +160,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
             }
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.PLAYER_COMMAND, (receiver, data) -> {
+        registerHandler(Action.PLAYER_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String serverName = in.readUTF();
             long id = in.readLong();
@@ -184,7 +184,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
             sendResponse(player, id, success);
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.CONSOLE_COMMAND, (receiver, data) -> {
+        registerHandler(Action.CONSOLE_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -196,7 +196,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
             sendResponse(senderServer, id, success);
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.EXECUTE_COMMAND, (receiver, data) -> {
+        registerHandler(Action.EXECUTE_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String serverName = in.readUTF();
             if (!serverName.equals(plugin.getServerName())) {
@@ -248,7 +248,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
             }
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.RESPONSE, (receiver, data) -> {
+        registerHandler(Action.RESPONSE, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String serverName = in.readUTF();
             if (!serverName.equals(plugin.getServerName())) {
@@ -312,7 +312,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
         location.write(out);
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
-        plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.SERVER, server.getName(), out.toByteArray());
+        sendData(Action.TELEPORT, MessageTarget.SERVER, server.getName(), out.toByteArray());
 
         sendToServerIfNecessary(player, server, future, consumer);
 
@@ -359,7 +359,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
         out.writeUTF(worldName);
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
-        plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_WORLD, MessageTarget.SERVER, server.getName(), out.toByteArray());
+        sendData(Action.TELEPORT_TO_WORLD, MessageTarget.SERVER, server.getName(), out.toByteArray());
 
         sendToServerIfNecessary(player, server, future, consumer);
 
@@ -413,7 +413,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
         out.writeUTF(target.getName());
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
-        plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_QUEUE, out.toByteArray());
+        sendData(Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_QUEUE, out.toByteArray());
 
         sendToServerIfNecessary(player, target.getServer().getInfo(), future, consumer);
 
@@ -450,7 +450,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
         out.writeLong(id);
         out.writeUTF(player.getName());
         responses.put(id, new ResponseHandler.Location(future));
-        plugin.getConnector().sendData(plugin, Action.GET_LOCATION, MessageTarget.SERVER, player, out.toByteArray());
+        sendData(Action.GET_LOCATION, MessageTarget.SERVER, player, out.toByteArray());
         return future;
     }
 
@@ -472,7 +472,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
         out.writeLong(player.getUniqueId().getLeastSignificantBits());
         out.writeUTF(command);
         responses.put(id, new ResponseHandler.Boolean(future));
-        plugin.getConnector().sendData(plugin, Action.PLAYER_COMMAND, MessageTarget.SERVER, player, out.toByteArray());
+        sendData(Action.PLAYER_COMMAND, MessageTarget.SERVER, player, out.toByteArray());
         return future;
     }
 
@@ -495,7 +495,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
         if (consumer != null && consumer.length > 0) {
             consumers.put(id, consumer);
         }
-        plugin.getConnector().sendData(plugin, Action.CONSOLE_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
+        sendData(Action.CONSOLE_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
         return future;
     }
 
@@ -516,7 +516,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
         if (consumer != null && consumer.length > 0) {
             consumers.put(id, consumer);
         }
-        plugin.getConnector().sendData(plugin, Action.CONSOLE_COMMAND, MessageTarget.OTHER_PROXIES, out.toByteArray());
+        sendData(Action.CONSOLE_COMMAND, MessageTarget.OTHER_PROXIES, out.toByteArray());
         return future;
     }
 
@@ -530,7 +530,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
 
         out.writeUTF(plugin.getServerName());
         write(out, command);
-        plugin.getConnector().sendData(plugin, Action.REGISTER_COMMAND, MessageTarget.SERVER, server, out.toByteArray());
+        sendData(Action.REGISTER_COMMAND, MessageTarget.SERVER, server, out.toByteArray());
     }
 
     /**
@@ -544,7 +544,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin> {
 
         out.writeUTF(plugin.getServerName());
         write(out, command);
-        plugin.getConnector().sendData(plugin, Action.REGISTER_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
+        sendData(Action.REGISTER_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
 
         plugin.getProxy().getPluginManager().registerCommand(command.getPlugin(), new ForwardingCommand(command.getName(), command.getPermission(), command));
         for (String alias : command.getAliases()) {

@@ -22,13 +22,13 @@ import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import de.themoep.connectorplugin.connector.Connector;
 import de.themoep.connectorplugin.connector.MessageTarget;
 
-public interface ConnectorPlugin extends ConnectingPlugin {
+public interface ConnectorPlugin<R> extends ConnectingPlugin {
 
     /**
      * Get the Connector which is used for sending and handling data
      * @return The Connector
      */
-    Connector getConnector();
+    Connector<? extends ConnectorPlugin, R> getConnector();
 
     /**
      * The type of source that this plugin is. {@link MessageTarget.Type#SERVER} or {@link MessageTarget.Type#PROXY}

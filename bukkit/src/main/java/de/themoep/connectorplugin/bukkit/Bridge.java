@@ -63,7 +63,7 @@ import java.util.function.Consumer;
 import static de.themoep.connectorplugin.connector.Connector.PLAYER_PREFIX;
 import static de.themoep.connectorplugin.connector.Connector.PROXY_ID_PREFIX;
 
-public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Listener {
+public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implements Listener {
 
     private CommandMap commandMap = null;
 
@@ -82,7 +82,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
 
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
 
-        plugin.getConnector().registerHandler(plugin, Action.TELEPORT, (receiver, data) -> {
+        registerHandler(Action.TELEPORT, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -114,7 +114,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             }
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.TELEPORT_TO_WORLD, (receiver, data) -> {
+        registerHandler(Action.TELEPORT_TO_WORLD, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -140,7 +140,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             } else {
                 loginRequests.put(playerName.toLowerCase(Locale.ROOT), new LocationTeleportRequest(senderServer, id, fromBukkit(world.getSpawnLocation())));
                 if (!plugin.getConnector().requiresPlayer() || !plugin.getServer().getOnlinePlayers().isEmpty()) {
-                    plugin.getBridge().sendToServer(playerName, serverName,
+                    sendToServer(playerName, serverName,
                             messages -> sendResponseMessage(senderServer, id, messages)
                     ).whenComplete((success, ex) -> {
                         sendResponse(senderServer, id, success, success ? "Player teleported to spawn of " + worldName + "!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
@@ -149,7 +149,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             }
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.TELEPORT_TO_PLAYER, (receiver, data) -> {
+        registerHandler(Action.TELEPORT_TO_PLAYER, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -166,7 +166,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
                 } else {
                     loginRequests.put(playerName.toLowerCase(Locale.ROOT), new PlayerTeleportRequest(senderServer, id, targetName));
                     if (!plugin.getConnector().requiresPlayer() || !plugin.getServer().getOnlinePlayers().isEmpty()) {
-                        plugin.getBridge().sendToServer(playerName, plugin.getServerName(),
+                        sendToServer(playerName, plugin.getServerName(),
                                 messages -> sendResponseMessage(senderServer, id, messages)
                         ).whenComplete((success, ex) -> {
                             sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
@@ -176,7 +176,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             }
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.GET_LOCATION, (receiver, data) -> {
+        registerHandler(Action.GET_LOCATION, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -190,7 +190,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             }
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.PLAYER_COMMAND, (receiver, data) -> {
+        registerHandler(Action.PLAYER_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             long id = in.readLong();
@@ -214,7 +214,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             sendResponse(senderServer, id, success);
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.CONSOLE_COMMAND, (receiver, data) -> {
+        registerHandler(Action.CONSOLE_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             String targetServer = in.readUTF();
@@ -235,7 +235,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             sendResponse(senderServer, id, success);
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.REGISTER_COMMAND, (receiver, data) -> {
+        registerHandler(Action.REGISTER_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
             String pluginName = in.readUTF();
@@ -258,7 +258,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             }
         });
 
-        plugin.getConnector().registerHandler(plugin, Action.RESPONSE, (receiver, data) -> {
+        registerHandler(Action.RESPONSE, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String serverName = in.readUTF();
             if (!serverName.equals(plugin.getServerName())) {
@@ -281,7 +281,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(plugin.getServerName());
-        plugin.getConnector().sendData(plugin, Action.STARTED, MessageTarget.ALL_PROXIES, out.toByteArray());
+        sendData(Action.STARTED, MessageTarget.ALL_PROXIES, out.toByteArray());
     }
 
     @EventHandler
@@ -337,8 +337,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
 
     @Override
     protected void sendResponseData(String target, byte[] out) {
-        plugin.getConnector().sendData(
-                plugin,
+        sendData(
                 Action.RESPONSE,
                 target.startsWith(PROXY_ID_PREFIX) ? MessageTarget.PROXY : MessageTarget.OTHERS_QUEUE,
                 target,
@@ -359,10 +358,10 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
 
         if (sender instanceof Player) {
             fromBukkit(((Player) sender).getLocation()).write(out);
-            plugin.getConnector().sendData(plugin, Action.EXECUTE_COMMAND, MessageTarget.PROXY, (Player) sender, out.toByteArray());
+            sendData(Action.EXECUTE_COMMAND, MessageTarget.PROXY, (Player) sender, out.toByteArray());
         } else {
             out.writeUTF(""); // Indicate empty location
-            plugin.getConnector().sendData(plugin, Action.EXECUTE_COMMAND, MessageTarget.ALL_PROXIES, out.toByteArray());
+            sendData(Action.EXECUTE_COMMAND, MessageTarget.ALL_PROXIES, out.toByteArray());
         }
     }
 
@@ -383,7 +382,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeUTF(serverName);
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
-        plugin.getConnector().sendData(plugin, Action.SEND_TO_SERVER, MessageTarget.ALL_PROXIES, out.toByteArray());
+        sendData(Action.SEND_TO_SERVER, MessageTarget.ALL_PROXIES, out.toByteArray());
         return future;
     }
 
@@ -404,7 +403,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         location.write(out);
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
-        plugin.getConnector().sendData(plugin, Action.TELEPORT, MessageTarget.ALL_PROXIES, out.toByteArray());
+        sendData(Action.TELEPORT, MessageTarget.ALL_PROXIES, out.toByteArray());
         return future;
     }
 
@@ -427,7 +426,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeUTF(worldName);
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
-        plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_WORLD, MessageTarget.ALL_PROXIES, out.toByteArray());
+        sendData(Action.TELEPORT_TO_WORLD, MessageTarget.ALL_PROXIES, out.toByteArray());
         return future;
     }
 
@@ -448,7 +447,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeUTF(targetName);
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
-        plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_PROXIES, out.toByteArray());
+        sendData(Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_PROXIES, out.toByteArray());
         return future;
     }
 
@@ -474,7 +473,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeLong(id);
         out.writeUTF(player);
         responses.put(id, new ResponseHandler.String(future));
-        plugin.getConnector().sendData(plugin, Action.GET_SERVER, MessageTarget.ALL_PROXIES, PLAYER_PREFIX + player, out.toByteArray());
+        sendData(Action.GET_SERVER, MessageTarget.ALL_PROXIES, PLAYER_PREFIX + player, out.toByteArray());
         return future;
     }
 
@@ -501,7 +500,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeLong(id);
         out.writeUTF(player);
         responses.put(id, new ResponseHandler.Location(future));
-        plugin.getConnector().sendData(plugin, Action.GET_LOCATION, MessageTarget.ALL_PROXIES, PLAYER_PREFIX + player, out.toByteArray());
+        sendData(Action.GET_LOCATION, MessageTarget.ALL_PROXIES, PLAYER_PREFIX + player, out.toByteArray());
         return future;
     }
 
@@ -523,7 +522,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         out.writeLong(player.getUniqueId().getLeastSignificantBits());
         out.writeUTF(command);
         responses.put(id, new ResponseHandler.Boolean(future));
-        plugin.getConnector().sendData(plugin, Action.PLAYER_COMMAND, MessageTarget.PROXY, player, out.toByteArray());
+        sendData(Action.PLAYER_COMMAND, MessageTarget.PROXY, player, out.toByteArray());
         return future;
     }
 
@@ -546,7 +545,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         if (consumer != null && consumer.length > 0) {
             consumers.put(id, consumer);
         }
-        plugin.getConnector().sendData(plugin, Action.CONSOLE_COMMAND, MessageTarget.OTHERS_QUEUE, out.toByteArray());
+        sendData(Action.CONSOLE_COMMAND, MessageTarget.OTHERS_QUEUE, out.toByteArray());
         return future;
     }
 
@@ -567,7 +566,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         if (consumer != null && consumer.length > 0) {
             consumers.put(id, consumer);
         }
-        plugin.getConnector().sendData(plugin, Action.CONSOLE_COMMAND, MessageTarget.ALL_PROXIES, out.toByteArray());
+        sendData(Action.CONSOLE_COMMAND, MessageTarget.ALL_PROXIES, out.toByteArray());
         return future;
     }
 
@@ -620,7 +619,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
             out.writeLong(id);
             out.writeBoolean(false);
             out.writeUTF(String.join("\n", messages));
-            plugin.getConnector().sendData(plugin, Action.RESPONSE, MessageTarget.OTHERS_QUEUE, out.toByteArray());
+            sendData(Action.RESPONSE, MessageTarget.OTHERS_QUEUE, out.toByteArray());
         }
 
         @Override

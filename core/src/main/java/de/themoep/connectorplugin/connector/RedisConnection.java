@@ -122,7 +122,7 @@ public class RedisConnection {
         if (connection == null || !connection.isOpen()) {
             connection = client.connect(new StringByteArrayCodec());
         }
-        byte[] messageData = message.writeToByteArray(plugin);
+        byte[] messageData = message.writeToByteArray();
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(plugin.getGroup());

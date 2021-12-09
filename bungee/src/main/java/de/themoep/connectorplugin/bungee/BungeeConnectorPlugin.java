@@ -26,11 +26,12 @@ import de.themoep.connectorplugin.bungee.connector.MqttConnector;
 import de.themoep.connectorplugin.bungee.connector.PluginMessageConnector;
 import de.themoep.connectorplugin.bungee.connector.RedisConnector;
 import de.themoep.connectorplugin.connector.MessageTarget;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.util.Locale;
 import java.util.logging.Level;
 
-public final class BungeeConnectorPlugin extends BungeePlugin implements ConnectorPlugin {
+public final class BungeeConnectorPlugin extends BungeePlugin implements ConnectorPlugin<ProxiedPlayer> {
 
     private BungeeConnector connector;
     private Bridge bridge;

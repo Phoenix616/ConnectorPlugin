@@ -22,7 +22,7 @@ import de.themoep.connectorplugin.connector.MessageTarget;
 
 import static de.themoep.connectorplugin.connector.Connector.PROXY_ID_PREFIX;
 
-public abstract class ProxyBridgeCommon<P extends ConnectorPlugin> extends BridgeCommon<P> {
+public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends BridgeCommon<P, R> {
 
     public ProxyBridgeCommon(P plugin) {
         super(plugin);
@@ -30,8 +30,7 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin> extends Bridg
 
     @Override
     protected void sendResponseData(String target, byte[] out) {
-        plugin.getConnector().sendData(
-                plugin,
+        sendData(
                 Action.RESPONSE,
                 target.startsWith(PROXY_ID_PREFIX) ? MessageTarget.OTHER_PROXIES : MessageTarget.SERVER,
                 target,

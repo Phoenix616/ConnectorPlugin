@@ -47,7 +47,7 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
     public Connector(P plugin, boolean requiresPlayer) {
         this.plugin = plugin;
         this.requiresPlayer = requiresPlayer;
-        plugin.logInfo("Using " + plugin.getConnector().getClass().getSimpleName().replace("Connector", "") + " messenger");
+        plugin.logInfo("Using " + getClass().getSimpleName().replace("Connector", "") + " messenger");
         if (requiresPlayer) {
             plugin.logWarning("This messenger type requires at least one player connected to the sending and receiving server,"
                     + " some functionality might not work the best!"

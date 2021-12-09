@@ -23,6 +23,7 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import de.themoep.connectorplugin.ConnectorPlugin;
 import de.themoep.connectorplugin.velocity.commands.ConnectorCommand;
@@ -39,7 +40,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.logging.Level;
 
-public final class VelocityConnectorPlugin implements ConnectorPlugin {
+public final class VelocityConnectorPlugin implements ConnectorPlugin<Player> {
 
     private final ProxyServer proxy;
     private final Logger logger;

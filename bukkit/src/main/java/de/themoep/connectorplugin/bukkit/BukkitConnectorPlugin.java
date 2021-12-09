@@ -26,6 +26,7 @@ import de.themoep.connectorplugin.bukkit.connector.PluginMessageConnector;
 import de.themoep.connectorplugin.bukkit.connector.RedisConnector;
 import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import de.themoep.connectorplugin.connector.MessageTarget;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginDisableEvent;
@@ -35,7 +36,7 @@ import java.io.File;
 import java.util.Locale;
 import java.util.logging.Level;
 
-public final class BukkitConnectorPlugin extends JavaPlugin implements ConnectorPlugin, Listener {
+public final class BukkitConnectorPlugin extends JavaPlugin implements ConnectorPlugin<Player>, Listener {
 
     private BukkitConnector connector;
     private Bridge bridge;

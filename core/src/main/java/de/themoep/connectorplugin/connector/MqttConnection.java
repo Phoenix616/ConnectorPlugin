@@ -99,7 +99,7 @@ public class MqttConnection {
     }
 
     public void sendMessage(String senderName, Message message) {
-        byte[] messageData = message.writeToByteArray(plugin);
+        byte[] messageData = message.writeToByteArray();
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(plugin.getGroup());

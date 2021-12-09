@@ -57,7 +57,7 @@ public class Message {
         return data;
     }
 
-    public byte[] writeToByteArray(ConnectorPlugin plugin) {
+    public byte[] writeToByteArray() {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeInt(VERSION);
         out.writeUTF(target.name());
@@ -72,8 +72,10 @@ public class Message {
     public static Message fromByteArray(byte[] messageData) throws VersionMismatchException {
         ByteArrayDataInput in = ByteStreams.newDataInput(messageData);
         int messageVersion = in.readInt();
-        if (messageVersion != VERSION) {
-            throw new VersionMismatchException(messageVersion, VERSION, "Received an unsupported version " + messageVersion + ", only supporting " + VERSION);
+        if (messageVersion < VERSION) {
+            throw new VersionMismatchException(messageVersion, VERSION, "Received message from an outdated version (" + messageVersion + ", this only supports " + VERSION + ")! Please update the sending plugin!");
+        } else if (messageVersion > VERSION) {
+            throw new VersionMismatchException(messageVersion, VERSION, "Received message with a newer version (" + messageVersion + ", this only supports " + VERSION + ")! Please update this plugin!");
         }
         MessageTarget target = MessageTarget.valueOf(in.readUTF());
         String senderServer = in.readUTF();

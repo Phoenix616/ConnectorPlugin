@@ -88,7 +88,7 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
 
     @Override
     public void sendDataImplementation(String targetData, Message message) {
-        byte[] messageData = message.writeToByteArray(plugin);
+        byte[] messageData = message.writeToByteArray();
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(plugin.getGroup());

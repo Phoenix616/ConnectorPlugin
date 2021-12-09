@@ -23,12 +23,15 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import de.themoep.connectorplugin.connector.MessageTarget;
+import de.themoep.connectorplugin.connector.VersionMismatchException;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public abstract class BridgeCommon<P extends ConnectorPlugin> {
+public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
     protected final P plugin;
 
     protected final Cache<Long, ResponseHandler<?>> responses = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
@@ -38,6 +41,55 @@ public abstract class BridgeCommon<P extends ConnectorPlugin> {
 
     public BridgeCommon(P plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * Register a bridge handler for a certain action
+     * @param action    The action to register (case sensitive)
+     * @param handler   A BiConsumer which takes the receiving player and the data
+     * @return The previously registered handler if there was one
+     */
+    protected BiConsumer<R, byte[]> registerHandler(String action, BiConsumer<R, byte[]> handler) {
+        return plugin.getConnector().registerHandler(plugin, action, (r, data) -> {
+            try {
+                BridgeMessage message = BridgeMessage.fromByteArray(data);
+                handler.accept((R) r, message.getData());
+            } catch (VersionMismatchException e) {
+                plugin.logError(e.getMessage() + " Ignoring message!");
+            }
+        });
+    }
+
+    /**
+     * Send data to a specific target
+     * @param action    The action for which data is sent
+     * @param target    Where to send data to
+     * @param data      The data
+     */
+    public void sendData(String action, MessageTarget target, byte[] data) {
+        plugin.getConnector().sendData(plugin, action, target, new BridgeMessage(data).writeToByteArray());
+    }
+
+    /**
+     * Send data to a specific target
+     * @param action    The action for which data is sent
+     * @param target    Where to send data to
+     * @param player    Additional player data to use for sending (required in case the target is {@link MessageTarget#SERVER} or {@link MessageTarget#PROXY})
+     * @param data      The data
+     */
+    protected void sendData(String action, MessageTarget target, R player, byte[] data) {
+        plugin.getConnector().sendData(plugin, action, target, player, new BridgeMessage(data).writeToByteArray());
+    }
+
+    /**
+     * Send data to a specific target
+     * @param action        The action for which data is sent
+     * @param target        Where to send data to
+     * @param targetData    Additional data to use for sending (required in case the target is {@link MessageTarget#SERVER})
+     * @param data          The data
+     */
+    protected void sendData(String action, MessageTarget target, String targetData, byte[] data) {
+        plugin.getConnector().sendData(plugin, action, target, targetData, new BridgeMessage(data).writeToByteArray());
     }
 
     protected void sendResponse(String target, long id, Object response, String... messages) {
@@ -87,6 +139,41 @@ public abstract class BridgeCommon<P extends ConnectorPlugin> {
             }
         } else {
             plugin.logDebug("Could not find response for execution with ID " + id);
+        }
+    }
+
+    protected static class BridgeMessage {
+        private static final int VERSION = 1;
+        private final byte[] data;
+
+        public BridgeMessage(byte[] data) {
+            this.data = data;
+        }
+
+        public byte[] writeToByteArray() {
+            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+            out.writeInt(VERSION);
+            out.writeInt(data.length);
+            out.write(data);
+            return out.toByteArray();
+        }
+
+        public static BridgeMessage fromByteArray(byte[] messageData) throws VersionMismatchException {
+            ByteArrayDataInput in = ByteStreams.newDataInput(messageData);
+            int version = in.readInt();
+            if (version < VERSION) {
+                throw new VersionMismatchException(version, VERSION, "Received bridge message from an outdated version! Please update the sending plugin!");
+            } else if (version > VERSION) {
+                throw new VersionMismatchException(version, VERSION, "Received bridge message with a newer version! Please update this plugin!");
+            }
+            int length = in.readInt();
+            byte[] data = new byte[length];
+            in.readFully(data);
+            return new BridgeMessage(data);
+        }
+
+        public byte[] getData() {
+            return data;
         }
     }
 
