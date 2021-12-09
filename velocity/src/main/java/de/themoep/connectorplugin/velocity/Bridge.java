@@ -31,9 +31,9 @@ import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
-import de.themoep.connectorplugin.BridgeCommon;
 import de.themoep.connectorplugin.BridgedCommand;
 import de.themoep.connectorplugin.LocationInfo;
+import de.themoep.connectorplugin.ProxyBridgeCommon;
 import de.themoep.connectorplugin.ResponseHandler;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import net.kyori.adventure.audience.MessageType;
@@ -49,11 +49,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
+import static de.themoep.connectorplugin.connector.Connector.PLAYER_PREFIX;
+
+public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin> {
 
     private Table<String, String, BridgedCommand<?, CommandSource>> commands = HashBasedTable.create();
 
@@ -137,6 +140,34 @@ public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
                     .thenAccept(success -> sendResponse(senderServer, id, success));
         });
 
+        plugin.getConnector().registerHandler(plugin, Action.GET_SERVER, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+
+            Optional<Player> player = plugin.getProxy().getPlayer(playerName);
+            if (player.isPresent() && player.get().getCurrentServer().isPresent()) {
+                sendResponse(senderServer, id, player.get().getCurrentServer().get().getServerInfo().getName());
+            } else {
+                sendResponse(senderServer, id, "");
+            }
+        });
+
+        plugin.getConnector().registerHandler(plugin, Action.GET_LOCATION, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+
+            Optional<Player> player = plugin.getProxy().getPlayer(playerName);
+            if (player.isPresent() && player.get().getCurrentServer().isPresent()) {
+                getLocation(player.get()).thenAccept(location -> sendResponse(senderServer, id, location));
+            } else {
+                sendResponse(senderServer, id, "");
+            }
+        });
+
         plugin.getConnector().registerHandler(plugin, Action.PLAYER_COMMAND, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String serverName = in.readUTF();
@@ -156,7 +187,7 @@ public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
             plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + serverName);
             Player finalPlayer = player;
             plugin.getProxy().getCommandManager().executeAsync(finalPlayer, command)
-                    .thenAccept(success -> sendResponse(serverName, id, finalPlayer, success));
+                    .thenAccept(success -> sendResponse(finalPlayer, id, success));
         });
 
         plugin.getConnector().registerHandler(plugin, Action.CONSOLE_COMMAND, (receiver, data) -> {
@@ -244,39 +275,8 @@ public class Bridge extends BridgeCommon<VelocityConnectorPlugin> {
         });
     }
 
-    private void sendResponse(String server, long id, Player player, boolean success, String... messages) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(server);
-        out.writeLong(id);
-        out.writeBoolean(true);
-        out.writeBoolean(success);
-        plugin.getConnector().sendData(plugin, Action.RESPONSE, MessageTarget.SERVER, player, out.toByteArray());
-
-        if (messages.length > 0) {
-            sendResponseMessage(server, id, messages);
-        }
-    }
-
-    private void sendResponse(String server, long id, boolean success, String... messages) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(server);
-        out.writeLong(id);
-        out.writeBoolean(true);
-        out.writeBoolean(success);
-        plugin.getConnector().sendData(plugin, Action.RESPONSE, server.startsWith("proxy:") ? MessageTarget.OTHER_PROXIES : MessageTarget.ALL_QUEUE, out.toByteArray());
-
-        if (messages.length > 0) {
-            sendResponseMessage(server, id, messages);
-        }
-    }
-
-    private void sendResponseMessage(String server, long id, String... messages) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(server);
-        out.writeLong(id);
-        out.writeBoolean(false);
-        out.writeUTF(String.join("\n", messages));
-        plugin.getConnector().sendData(plugin, Action.RESPONSE, server.startsWith("proxy:") ? MessageTarget.OTHER_PROXIES : MessageTarget.ALL_QUEUE, out.toByteArray());
+    private void sendResponse(Player player, long id, boolean success, String... messages) {
+        sendResponse(PLAYER_PREFIX + player, id, success, messages);
     }
 
     /**

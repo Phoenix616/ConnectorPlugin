@@ -55,17 +55,20 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
 
         ByteArrayDataInput in = ByteStreams.newDataInput(data);
         String group = in.readUTF();
-        if (!group.equals(plugin.getGroup()) && !group.isEmpty()) {
+        if (!group.equals(plugin.getGroup()) && !group.isEmpty() && !plugin.getGroup().isEmpty()) {
             return;
         }
 
         String target = in.readUTF();
-        if (target.startsWith(SERVER_PREFIX) && !target.equalsIgnoreCase(SERVER_PREFIX + plugin.getServerName())) {
+        if (!isThis(target)) {
             return;
-        } else if (!target.isEmpty() && !player.getName().equals(target)) {
-            player = getReceiver(target);
+        }
+
+        if (target.startsWith(PLAYER_PREFIX)) {
+            String playerName = target.substring(PLAYER_PREFIX.length());
+            player = getReceiver(playerName);
             if (player == null) {
-                plugin.logError("Player " + player + " wasn't found online?");
+                plugin.logError("Player " + playerName + " wasn't found online?");
                 return;
             }
         }

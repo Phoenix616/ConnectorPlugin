@@ -34,7 +34,7 @@ public class MqttConnector extends BungeeConnector {
                 plugin.getConfig().getString("mqtt.username"),
                 plugin.getConfig().getString("mqtt.password"),
                 plugin.getConfig().getInt("mqtt.keep-alive"),
-                (target, message) -> handle(getReceiver(target), message)
+                this::handle
         );
     }
 

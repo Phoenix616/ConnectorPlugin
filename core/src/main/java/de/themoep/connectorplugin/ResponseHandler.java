@@ -38,6 +38,12 @@ public abstract class ResponseHandler<T> {
         }
     }
 
+    public static class String extends ResponseHandler<java.lang.String> {
+        public String(CompletableFuture<java.lang.String> future) {
+            super(future);
+        }
+    }
+
     public static class Location extends ResponseHandler<LocationInfo> {
         public Location(CompletableFuture<LocationInfo> future) {
             super(future);

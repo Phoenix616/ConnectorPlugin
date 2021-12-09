@@ -52,6 +52,9 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
 
         ByteArrayDataInput in = ByteStreams.newDataInput(event.getData());
         String group = in.readUTF();
+        if (!group.equals(plugin.getGroup()) && !group.isEmpty() && !plugin.getGroup().isEmpty()) {
+            return;
+        }
 
         String target = in.readUTF();
 
@@ -75,7 +78,7 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
                     break;
                 case PROXY:
                 case ALL_PROXIES:
-                    handle((ProxiedPlayer) event.getReceiver(), message);
+                    handle(target, message);
                     break;
                 case SERVER:
                     if (!target.isEmpty()) {
@@ -83,7 +86,7 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
                         if (server != null) {
                             server.sendData(plugin.getMessageChannel(), event.getData(), true);
                         } else {
-                            plugin.logError(target + " doesn't exist?");
+                            plugin.logDebug(target + " doesn't exist?");
                         }
                     } else {
                         plugin.logError(message.getTarget() + " message target requires explicit target!");

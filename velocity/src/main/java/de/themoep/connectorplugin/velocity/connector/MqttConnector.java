@@ -34,7 +34,7 @@ public class MqttConnector extends VelocityConnector {
                 plugin.getConfig().getString("mqtt.username"),
                 plugin.getConfig().getString("mqtt.password"),
                 plugin.getConfig().getInt("mqtt.keep-alive"),
-                (receiver, message) -> handle(getReceiver(receiver), message)
+                this::handle
         );
     }
 

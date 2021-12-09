@@ -29,7 +29,16 @@ import java.util.function.BiConsumer;
 public abstract class Connector<P extends ConnectorPlugin, R> {
     protected final P plugin;
 
+    /**
+     * Use for prefixing the ID of the proxy
+     */
+    public static final String PROXY_ID_PREFIX = "proxy:";
+
+    /**
+     * Used for identifying the target type
+     */
     public static final String SERVER_PREFIX = "server:";
+    public static final String PLAYER_PREFIX = "player:";
 
     private final boolean requiresPlayer;
 
@@ -38,6 +47,12 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
     public Connector(P plugin, boolean requiresPlayer) {
         this.plugin = plugin;
         this.requiresPlayer = requiresPlayer;
+    }
+
+    protected void handle(String receiver, Message message) {
+        if (isThis(receiver)) {
+            handle(getReceiver(receiver), message);
+        }
     }
 
     protected void handle(R receiver, Message message) {
@@ -93,14 +108,14 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
 
     /**
      * Send data to a specific target
-     * @param sender    The plugin which sends the data
-     * @param action    The action for which data is sent
-     * @param target    Where to send data to
-     * @param server    Additional data to use for sending (required in case the target is {@link MessageTarget#SERVER})
-     * @param data      The data
+     * @param sender        The plugin which sends the data
+     * @param action        The action for which data is sent
+     * @param target        Where to send data to
+     * @param targetData    Additional data to use for sending (required in case the target is {@link MessageTarget#SERVER})
+     * @param data          The data
      */
-    public void sendData(ConnectingPlugin sender, String action, MessageTarget target, String server, byte[] data) {
-        sendDataInternal(sender, action, target, server, data);
+    public void sendData(ConnectingPlugin sender, String action, MessageTarget target, String targetData, byte[] data) {
+        sendDataInternal(sender, action, target, targetData, data);
     }
 
     public void sendDataInternal(ConnectingPlugin sender, String action, MessageTarget target, Object targetData, byte[] data) {
@@ -113,7 +128,33 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
 
     protected abstract void sendDataImplementation(Object targetData, Message message);
 
-    protected abstract R getReceiver(String name);
+    protected boolean hasPrefix(String target) {
+        return target.startsWith(SERVER_PREFIX) || target.startsWith(PLAYER_PREFIX);
+    }
+
+    protected R getReceiver(String name) {
+        if (name.startsWith(SERVER_PREFIX)) {
+            return null;
+        }
+        if (name.startsWith(PLAYER_PREFIX)) {
+            name = name.substring(PLAYER_PREFIX.length());
+        }
+        return getReceiverImplementation(name);
+    }
+
+    protected abstract R getReceiverImplementation(String name);
+
+    protected boolean isThis(String receiver) {
+        if (receiver == null || receiver.isEmpty()) {
+            return true;
+        } else if (receiver.startsWith(SERVER_PREFIX)) {
+            return plugin.getServerName().equals(receiver.substring(SERVER_PREFIX.length()));
+        } else if (receiver.startsWith(PLAYER_PREFIX)) {
+            R player = getReceiver(receiver);
+            return player != null;
+        }
+        return false;
+    }
 
     /**
      * Register a handler for a certain action

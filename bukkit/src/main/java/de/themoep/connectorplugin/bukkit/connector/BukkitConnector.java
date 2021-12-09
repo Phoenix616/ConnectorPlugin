@@ -29,8 +29,12 @@ public abstract class BukkitConnector extends Connector<BukkitConnectorPlugin, P
         super(plugin, requiresPlayer);
     }
 
-    protected Player getReceiver(String name) {
-        return plugin.getServer().getPlayer(name);
+    protected Player getReceiverImplementation(String name) {
+        Player player = plugin.getServer().getPlayer(name);
+        if (player != null && player.isOnline()) {
+            return player;
+        }
+        return null;
     }
 
     @Override
@@ -47,7 +51,13 @@ public abstract class BukkitConnector extends Connector<BukkitConnectorPlugin, P
 
     @Override
     protected void sendDataImplementation(Object targetData, Message message) {
-        sendDataImplementation(targetData instanceof Player ? ((Player) targetData).getName() : targetData instanceof String ? SERVER_PREFIX + targetData : "", message);
+        sendDataImplementation(targetData instanceof String
+                ? (hasPrefix((String) targetData)
+                        ? (String) targetData
+                        : SERVER_PREFIX + targetData)
+                : (targetData instanceof Player
+                        ? PLAYER_PREFIX + ((Player) targetData).getName()
+                        : ""), message);
     }
 
     protected abstract void sendDataImplementation(String targetData, Message message);

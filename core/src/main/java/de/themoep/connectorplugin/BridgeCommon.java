@@ -1,4 +1,6 @@
-package de.themoep.connectorplugin;/*
+package de.themoep.connectorplugin;
+
+/*
  * ConnectorPlugin
  * Copyright (C) 2021 Max Lee aka Phoenix616 (max@themoep.de)
  *
@@ -19,12 +21,14 @@ package de.themoep.connectorplugin;/*
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-public class BridgeCommon<P extends ConnectorPlugin> {
+public abstract class BridgeCommon<P extends ConnectorPlugin> {
     protected final P plugin;
 
     protected final Cache<Long, ResponseHandler<?>> responses = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
@@ -42,12 +46,46 @@ public class BridgeCommon<P extends ConnectorPlugin> {
         }
     }
 
+    protected void sendResponse(String target, long id, Object response, String... messages) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(target);
+        out.writeLong(id);
+        out.writeBoolean(true);
+        if (response instanceof Boolean) {
+            out.writeBoolean((Boolean) response);
+        } else if (response instanceof String) {
+            out.writeUTF((String) response);
+        } else if (response instanceof LocationInfo) {
+            ((LocationInfo) response).write(out);
+        } else if (response == null) {
+            out.writeUTF("");
+        }
+        sendResponseData(target, out.toByteArray());
+
+        if (messages.length > 0) {
+            sendResponseMessage(target, id, messages);
+        }
+    }
+
+    protected void sendResponseMessage(String target, long id, String... messages) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(target);
+        out.writeLong(id);
+        out.writeBoolean(false);
+        out.writeUTF(String.join("\n", messages));
+        sendResponseData(target, out.toByteArray());
+    }
+
+    protected abstract void sendResponseData(String target, byte[] out);
+
     protected void handleResponse(long id, ByteArrayDataInput in) {
         ResponseHandler<?> responseHandler = responses.getIfPresent(id);
         if (responseHandler != null) {
             responses.invalidate(id);
             if (responseHandler instanceof ResponseHandler.Boolean) {
                 ((ResponseHandler.Boolean) responseHandler).getFuture().complete(in.readBoolean());
+            } else if (responseHandler instanceof ResponseHandler.String) {
+                ((ResponseHandler.String) responseHandler).getFuture().complete(in.readUTF());
             } else if (responseHandler instanceof ResponseHandler.Location) {
                 ((ResponseHandler.Location) responseHandler).getFuture().complete(LocationInfo.read(in));
             } else {
@@ -65,6 +103,7 @@ public class BridgeCommon<P extends ConnectorPlugin> {
         public static final String TELEPORT_TO_WORLD = "teleport_to_world";
         public static final String TELEPORT_TO_PLAYER = "teleport_to_player";
         public static final String GET_LOCATION = "get_location";
+        public static final String GET_SERVER = "get_server";
         public static final String PLAYER_COMMAND = "player_command";
         public static final String CONSOLE_COMMAND = "console_command";
         public static final String RESPONSE = "response";

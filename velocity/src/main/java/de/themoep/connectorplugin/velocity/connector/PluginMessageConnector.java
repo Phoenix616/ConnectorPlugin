@@ -58,6 +58,11 @@ public class PluginMessageConnector extends VelocityConnector {
 
         ByteArrayDataInput in = ByteStreams.newDataInput(event.getData());
         String group = in.readUTF();
+        if (!group.equals(plugin.getGroup()) && !group.isEmpty() && !plugin.getGroup().isEmpty()) {
+            return;
+        }
+
+        String target = in.readUTF();
 
         int messageLength = in.readInt();
         byte[] messageData = new byte[messageLength];
@@ -85,9 +90,23 @@ public class PluginMessageConnector extends VelocityConnector {
                         sendToAllAndQueue(event.getData(), null);
                     }
                     break;
+                case SERVER:
+                    if (!target.isEmpty()) {
+                        RegisteredServer server = getTargetServer(target);
+                        if (server != null) {
+                            if (!server.sendPluginMessage(messageChannel, event.getData())) {
+                                messageQueue.put(server.getServerInfo().getName(), event.getData());
+                            }
+                        } else {
+                            plugin.logDebug(target + " doesn't exist?");
+                        }
+                    } else {
+                        plugin.logError(message.getTarget() + " message target requires explicit target!");
+                    }
+                    break;
                 case PROXY:
                 case ALL_PROXIES:
-                    handle((Player) event.getTarget(), message);
+                    handle(target, message);
                     break;
                 default:
                     plugin.logError("Receiving " + message.getTarget() + " is not supported!");

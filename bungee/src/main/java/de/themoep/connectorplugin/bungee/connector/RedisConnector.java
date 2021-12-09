@@ -34,7 +34,7 @@ public class RedisConnector extends BungeeConnector {
                 plugin.getConfig().getInt("redis.port"),
                 plugin.getConfig().getString("redis.password"),
                 plugin.getConfig().getLong("redis.timeout"),
-                (target, message) -> handle(getReceiver(target), message)
+                this::handle
         );
     }
 

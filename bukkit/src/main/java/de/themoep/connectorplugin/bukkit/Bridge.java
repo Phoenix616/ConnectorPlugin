@@ -60,6 +60,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static de.themoep.connectorplugin.connector.Connector.PLAYER_PREFIX;
+import static de.themoep.connectorplugin.connector.Connector.PROXY_ID_PREFIX;
+
 public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Listener {
 
     private CommandMap commandMap = null;
@@ -332,32 +335,14 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         );
     }
 
-    private void sendResponse(String server, long id, Object response, String... messages) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(server);
-        out.writeLong(id);
-        out.writeBoolean(true);
-        if (response instanceof Boolean) {
-            out.writeBoolean((Boolean) response);
-        } else if (response instanceof LocationInfo) {
-            ((LocationInfo) response).write(out);
-        } else if (response == null) {
-            out.writeUTF("");
-        }
-        plugin.getConnector().sendData(plugin, Action.RESPONSE, server.startsWith("proxy:") ? MessageTarget.ALL_PROXIES : MessageTarget.OTHERS_QUEUE, out.toByteArray());
-
-        if (messages.length > 0) {
-            sendResponseMessage(server, id, messages);
-        }
-    }
-
-    private void sendResponseMessage(String server, long id, String... messages) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(server);
-        out.writeLong(id);
-        out.writeBoolean(false);
-        out.writeUTF(String.join("\n", messages));
-        plugin.getConnector().sendData(plugin, Action.RESPONSE, server.startsWith("proxy:") ? MessageTarget.ALL_PROXIES : MessageTarget.OTHERS_QUEUE, out.toByteArray());
+    @Override
+    protected void sendResponseData(String target, byte[] out) {
+        plugin.getConnector().sendData(
+                plugin,
+                Action.RESPONSE,
+                target.startsWith(PROXY_ID_PREFIX) ? MessageTarget.PROXY : MessageTarget.OTHERS_QUEUE,
+                target,
+                out);
     }
 
     private void sendCommandExecution(CommandSender sender, BridgedCommandExecutor executor, String label, String[] args) {
@@ -464,6 +449,59 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin> implements Liste
         responses.put(id, new ResponseHandler.Boolean(future));
         consumers.put(id, consumer);
         plugin.getConnector().sendData(plugin, Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_PROXIES, out.toByteArray());
+        return future;
+    }
+
+    /**
+     * Get the server a player is connected to
+     * @param player    The player to get the server for
+     * @return A future for when the server was queried
+     */
+    public CompletableFuture<String> getServer(Player player) {
+        return getServer(player.getName());
+    }
+
+    /**
+     * Get the server a player is connected to
+     * @param player    The player to get the server for
+     * @return A future for when the server was queried
+     */
+    public CompletableFuture<String> getServer(String player) {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(player);
+        responses.put(id, new ResponseHandler.String(future));
+        plugin.getConnector().sendData(plugin, Action.GET_SERVER, MessageTarget.ALL_PROXIES, PLAYER_PREFIX + player, out.toByteArray());
+        return future;
+    }
+
+
+    /**
+     * Get the location a player is connected to
+     * @param player    The player to get the location for
+     * @return A future for when the location was queried
+     */
+    public CompletableFuture<LocationInfo> getLocation(Player player) {
+        return getLocation(player.getName());
+    }
+
+    /**
+     * Get the location a player is connected to
+     * @param player    The player to get the location for
+     * @return A future for when the location was queried
+     */
+    public CompletableFuture<LocationInfo> getLocation(String player) {
+        CompletableFuture<LocationInfo> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(player);
+        responses.put(id, new ResponseHandler.Location(future));
+        plugin.getConnector().sendData(plugin, Action.GET_LOCATION, MessageTarget.ALL_PROXIES, PLAYER_PREFIX + player, out.toByteArray());
         return future;
     }
 

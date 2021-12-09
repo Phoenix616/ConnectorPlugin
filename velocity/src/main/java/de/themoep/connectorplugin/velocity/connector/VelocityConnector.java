@@ -30,15 +30,15 @@ public abstract class VelocityConnector extends Connector<VelocityConnectorPlugi
         super(plugin, requiresPlayer);
     }
 
-    protected Player getReceiver(String name) {
+    protected Player getReceiverImplementation(String name) {
         return plugin.getProxy().getPlayer(name).orElse(null);
     }
 
     protected RegisteredServer getTargetServer(String target) {
         if (target.startsWith(SERVER_PREFIX)) {
             return plugin.getProxy().getServer(target.substring(SERVER_PREFIX.length())).orElse(null);
-        } else {
-            Player player = getReceiver(target);
+        } else if (target.startsWith(PLAYER_PREFIX)) {
+            Player player = getReceiver(target.substring(PLAYER_PREFIX.length()));
             if (player != null && player.getCurrentServer().isPresent()) {
                 return player.getCurrentServer().get().getServer();
             }
@@ -48,7 +48,13 @@ public abstract class VelocityConnector extends Connector<VelocityConnectorPlugi
 
     @Override
     protected void sendDataImplementation(Object targetData, Message message) {
-        sendDataImplementation(targetData instanceof Player ? ((Player) targetData).getUsername() : targetData instanceof String ? SERVER_PREFIX + targetData : "", message);
+        sendDataImplementation(targetData instanceof String
+                ? (hasPrefix((String) targetData)
+                        ? (String) targetData
+                        : SERVER_PREFIX + targetData)
+                : (targetData instanceof Player
+                        ? PLAYER_PREFIX + ((Player) targetData).getUsername()
+                        : ""), message);
     }
 
     protected abstract void sendDataImplementation(String targetData, Message message);
