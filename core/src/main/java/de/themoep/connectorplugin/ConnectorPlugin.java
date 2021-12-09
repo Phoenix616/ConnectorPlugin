@@ -42,6 +42,8 @@ public interface ConnectorPlugin extends ConnectingPlugin {
 
     void logDebug(String message, Throwable... throwables);
 
+    void logInfo(String message, Throwable... throwables);
+
     void logWarning(String message, Throwable... throwables);
 
     void logError(String message, Throwable... throwables);

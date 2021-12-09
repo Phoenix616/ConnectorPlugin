@@ -38,12 +38,6 @@ public abstract class BridgeCommon<P extends ConnectorPlugin> {
 
     public BridgeCommon(P plugin) {
         this.plugin = plugin;
-        if (plugin.getConnector().requiresPlayer()) {
-            plugin.logWarning("The configured messenger type "
-                    + plugin.getConnector().getClass().getSimpleName().replace("Connector", "")
-                    + " requires at least one player connected to the sending and receiving server, some functionality might not work the best!"
-                    + " Please consider using a different messenger type.");
-        }
     }
 
     protected void sendResponse(String target, long id, Object response, String... messages) {

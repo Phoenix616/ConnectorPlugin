@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.logging.Level;
 
 public final class VelocityConnectorPlugin implements ConnectorPlugin {
 
@@ -120,6 +121,11 @@ public final class VelocityConnectorPlugin implements ConnectorPlugin {
         if (debug) {
             logger.info("[DEBUG] " + message, throwables.length > 0 ? throwables[0] : null);
         }
+    }
+
+    @Override
+    public void logInfo(String message, Throwable... throwables) {
+        logger.info(message, throwables.length > 0 ? throwables[0] : null);
     }
 
     @Override

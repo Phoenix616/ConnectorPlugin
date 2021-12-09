@@ -96,6 +96,11 @@ public final class BungeeConnectorPlugin extends BungeePlugin implements Connect
     }
 
     @Override
+    public void logInfo(String message, Throwable... throwables) {
+        getLogger().log(Level.INFO, message, throwables.length > 0 ? throwables[0] : null);
+    }
+
+    @Override
     public void logWarning(String message, Throwable... throwables) {
         getLogger().log(Level.WARNING, message, throwables.length > 0 ? throwables[0] : null);
     }
