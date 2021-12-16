@@ -10,6 +10,7 @@ messenger-type: plugin_messages
 redis:
   host: localhost
   port: 6379
+  db: 0
   timeout: 60
   password: password1
   

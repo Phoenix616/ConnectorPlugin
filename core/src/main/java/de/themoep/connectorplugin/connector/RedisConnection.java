@@ -43,7 +43,7 @@ public class RedisConnection {
     private final RedisClient client;
     private StatefulRedisConnection<String, byte[]> connection;
 
-    public RedisConnection(ConnectorPlugin plugin, String uriString, String host, int port, String password, long timeout, BiConsumer<String, Message> onMessage) {
+    public RedisConnection(ConnectorPlugin plugin, String uriString, String host, int port, int db, String password, long timeout, BiConsumer<String, Message> onMessage) {
         this.plugin = plugin;
         RedisURI uri = new RedisURI();
         if (uriString != null && !uriString.isEmpty()) {
@@ -54,6 +54,9 @@ public class RedisConnection {
         }
         if (port > 0) {
             uri.setPort(port);
+        }
+        if (db > -1) {
+            uri.setDatabase(db);
         }
         if (password != null && !password.isEmpty()) {
             uri.setPassword(password);

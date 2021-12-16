@@ -16,6 +16,7 @@ server-name: changeme
 redis:
   host: localhost
   port: 6379
+  db: 0
   timeout: 60
   password: password1
 

@@ -32,6 +32,7 @@ public class RedisConnector extends VelocityConnector {
                 plugin.getConfig().getString("redis.uri"),
                 plugin.getConfig().getString("redis.host"),
                 plugin.getConfig().getInt("redis.port"),
+                plugin.getConfig().getInt("redis.db"),
                 plugin.getConfig().getString("redis.password"),
                 plugin.getConfig().getLong("redis.timeout"),
                 this::handle
