@@ -45,24 +45,26 @@ public class RedisConnection {
 
     public RedisConnection(ConnectorPlugin plugin, String uriString, String host, int port, int db, String password, long timeout, BiConsumer<String, Message> onMessage) {
         this.plugin = plugin;
-        RedisURI uri = new RedisURI();
+        RedisURI uri;
         if (uriString != null && !uriString.isEmpty()) {
             uri = RedisURI.create(uriString);
-        }
-        if (host != null && !host.isEmpty()) {
-            uri.setHost(host);
-        }
-        if (port > 0) {
-            uri.setPort(port);
-        }
-        if (db > -1) {
-            uri.setDatabase(db);
-        }
-        if (password != null && !password.isEmpty()) {
-            uri.setPassword(password);
-        }
-        if (timeout > 0) {
-            uri.setTimeout(Duration.ofSeconds(timeout));
+        } else {
+            uri = new RedisURI();
+            if (host != null && !host.isEmpty()) {
+                uri.setHost(host);
+            }
+            if (port > 0) {
+                uri.setPort(port);
+            }
+            if (db > -1) {
+                uri.setDatabase(db);
+            }
+            if (password != null && !password.isEmpty()) {
+                uri.setPassword(password);
+            }
+            if (timeout > 0) {
+                uri.setTimeout(Duration.ofSeconds(timeout));
+            }
         }
         client = RedisClient.create(uri);
 
