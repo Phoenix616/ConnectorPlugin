@@ -99,7 +99,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
 
             Player player = plugin.getServer().getPlayer(playerName);
             if (player != null) {
-                PaperLib.teleportAsync(player, toBukkit(location)).whenComplete((success, ex) -> {
+                PaperLib.teleportAsync(player, adapt(location)).whenComplete((success, ex) -> {
                     sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
                 });
             } else {
@@ -138,7 +138,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
                     sendResponse(senderServer, id, success, success ? "Player teleported to spawn of " + worldName + "!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
                 });
             } else {
-                loginRequests.put(playerName.toLowerCase(Locale.ROOT), new LocationTeleportRequest(senderServer, id, fromBukkit(world.getSpawnLocation())));
+                loginRequests.put(playerName.toLowerCase(Locale.ROOT), new LocationTeleportRequest(senderServer, id, adapt(world.getSpawnLocation())));
                 if (!plugin.getConnector().requiresPlayer() || !plugin.getServer().getOnlinePlayers().isEmpty()) {
                     sendToServer(playerName, serverName,
                             messages -> sendResponseMessage(senderServer, id, messages)
@@ -184,7 +184,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
 
             Player player = plugin.getServer().getPlayer(playerName);
             if (player != null) {
-                sendResponse(senderServer, id, fromBukkit(player.getLocation()));
+                sendResponse(senderServer, id, adapt(player.getLocation()));
             } else {
                 sendResponse(senderServer, id, (LocationInfo) null);
             }
@@ -290,7 +290,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         if (request != null) {
             loginRequests.invalidate(event.getPlayer().getName().toLowerCase(Locale.ROOT));
             if (request instanceof LocationTeleportRequest) {
-                event.setSpawnLocation(toBukkit(((LocationTeleportRequest) request).location));
+                event.setSpawnLocation(adapt(((LocationTeleportRequest) request).location));
                 sendResponse(request.server, request.id, true, "Player login location changed");
             } else if (request instanceof PlayerTeleportRequest) {
                 Player target = plugin.getServer().getPlayer(((PlayerTeleportRequest) request).targetName);
@@ -305,7 +305,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         }
     }
 
-    private Location toBukkit(LocationInfo location) {
+    public Location adapt(LocationInfo location) {
         World world = plugin.getServer().getWorld(location.getWorld());
         if (world == null) {
             throw new IllegalArgumentException("No world with the name " + location.getWorld() + " exists!");
@@ -320,7 +320,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         );
     }
 
-    private LocationInfo fromBukkit(Location location) {
+    public LocationInfo adapt(Location location) {
         if (location.getWorld() == null) {
             return null;
         }
@@ -357,7 +357,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         }
 
         if (sender instanceof Player) {
-            fromBukkit(((Player) sender).getLocation()).write(out);
+            adapt(((Player) sender).getLocation()).write(out);
             sendData(Action.EXECUTE_COMMAND, MessageTarget.PROXY, (Player) sender, out.toByteArray());
         } else {
             out.writeUTF(""); // Indicate empty location
@@ -394,6 +394,16 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
      * @return A future about whether the player could be teleported
      */
     public CompletableFuture<Boolean> teleport(String playerName, LocationInfo location, Consumer<String>... consumer) {
+        if (location.getServer().equals(plugin.getServerName())) {
+            Player player = plugin.getServer().getPlayerExact(playerName);
+            if (player != null) {
+                return PaperLib.teleportAsync(player, adapt(location)).whenComplete((success, ex) -> {
+                    for (Consumer<String> c : consumer) {
+                        c.accept(success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                    }
+                });
+            }
+        }
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
@@ -416,6 +426,23 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
      * @return A future about whether the player could be teleported
      */
     public CompletableFuture<Boolean> teleport(String playerName, String serverName, String worldName, Consumer<String>... consumer) {
+        if (serverName.equals(plugin.getServerName())) {
+            Player player = plugin.getServer().getPlayerExact(playerName);
+            if (player != null) {
+                World world = plugin.getServer().getWorld(worldName);
+                if (world == null) {
+                    for (Consumer<String> c : consumer) {
+                        c.accept("No world with the name " + worldName + " exists on the server!");
+                    }
+                    return CompletableFuture.completedFuture(false);
+                }
+                return PaperLib.teleportAsync(player, world.getSpawnLocation()).whenComplete((success, ex) -> {
+                    for (Consumer<String> c : consumer) {
+                        c.accept(success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                    }
+                });
+            }
+        }
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
