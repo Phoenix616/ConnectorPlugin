@@ -35,10 +35,10 @@ import de.themoep.connectorplugin.connector.MessageTarget;
 import org.slf4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Locale;
-import java.util.logging.Level;
 
 public final class VelocityConnectorPlugin implements ConnectorPlugin<Player> {
 
@@ -61,6 +61,12 @@ public final class VelocityConnectorPlugin implements ConnectorPlugin<Player> {
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
         config = new PluginConfig(this, new File(dataFolder, "config.yml"), "velocity-config.yml");
+        try {
+            config.createDefaultConfig();
+        } catch (IOException e) {
+            logger.error("Could not created default config! " + e.getMessage());
+            return;
+        }
         if (!config.load()) {
             return;
         }
