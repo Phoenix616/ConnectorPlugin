@@ -163,6 +163,6 @@ public final class VelocityConnectorPlugin implements ConnectorPlugin<Player> {
     }
 
     public InputStream getResourceAsStream(String file) {
-        return getClass().getResourceAsStream(file);
+        return getClass().getClassLoader().getResourceAsStream(file);
     }
 }
