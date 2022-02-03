@@ -4,7 +4,8 @@ debug: true
 # Currently supported types:
 # - "plugin_messages" (will not be able to send messages from server without any players online)
 # - "redis" (does not require online players)
-messenger-type: plugin_messages
+# - "mqtt" (does not require online players)
+messenger-type: redis
 
 # The group this server is in
 group: global
