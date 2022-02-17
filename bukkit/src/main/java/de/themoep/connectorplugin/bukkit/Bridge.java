@@ -94,13 +94,16 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
 
             if (plugin.getServer().getWorld(location.getWorld()) == null) {
                 sendResponse(senderServer, id, false, "No world with the name " + location.getWorld() + " exists on the server " + location.getServer() + "!");
+                plugin.logDebug("[M] Player " + playerName + " is online but world doesn't exist for " + location);
                 return;
             }
 
             Player player = plugin.getServer().getPlayer(playerName);
             if (player != null) {
+                plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to " + location);
                 PaperLib.teleportAsync(player, adapt(location)).whenComplete((success, ex) -> {
                     sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                    plugin.logDebug("[M] Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
                 });
             } else {
                 loginRequests.put(playerName.toLowerCase(Locale.ROOT), new LocationTeleportRequest(senderServer, id, location));
@@ -129,13 +132,16 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             World world = plugin.getServer().getWorld(worldName);
             if (world == null) {
                 sendResponse(senderServer, id, false, "No world with the name " + worldName + " exists on the server!");
+                plugin.logDebug("[M] Player " + playerName + " is online but no world with the name " + worldName + " to teleport to exists?");
                 return;
             }
 
             Player player = plugin.getServer().getPlayer(playerName);
             if (player != null) {
+                plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to spawn of world " + worldName);
                 PaperLib.teleportAsync(player, world.getSpawnLocation()).whenComplete((success, ex) -> {
                     sendResponse(senderServer, id, success, success ? "Player teleported to spawn of " + worldName + "!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                    plugin.logDebug("[M] Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
                 });
             } else {
                 loginRequests.put(playerName.toLowerCase(Locale.ROOT), new LocationTeleportRequest(senderServer, id, adapt(world.getSpawnLocation())));
@@ -160,8 +166,10 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             if (target != null) {
                 Player player = plugin.getServer().getPlayer(playerName);
                 if (player != null) {
+                        plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to player " + targetName);
                         PaperLib.teleportAsync(player, target.getLocation()).whenComplete((success, ex) -> {
                             sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                            plugin.logDebug("[M] Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
                         });
                 } else {
                     loginRequests.put(playerName.toLowerCase(Locale.ROOT), new PlayerTeleportRequest(senderServer, id, targetName));
@@ -292,14 +300,17 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             if (request instanceof LocationTeleportRequest) {
                 event.setSpawnLocation(adapt(((LocationTeleportRequest) request).location));
                 sendResponse(request.server, request.id, true, "Player login location changed");
+                plugin.logDebug("Set spawn location of player " + event.getPlayer().getName() + " to " + ((LocationTeleportRequest) request).location);
             } else if (request instanceof PlayerTeleportRequest) {
                 Player target = plugin.getServer().getPlayer(((PlayerTeleportRequest) request).targetName);
                 if (target == null) {
                     event.setSpawnLocation(plugin.getServer().getWorlds().get(0).getSpawnLocation());
                     sendResponse(request.server, request.id, false, "Target player " + ((PlayerTeleportRequest) request).targetName + " is no longer online?");
+                    plugin.logDebug("Tried to set spawn location of player " + event.getPlayer().getName() + " to " + ((PlayerTeleportRequest) request).targetName + " but target wasn't online. Set to level spawn instead.");
                 } else {
                     event.setSpawnLocation(target.getLocation());
                     sendResponse(request.server, request.id, true, "Player login location changed to " + target.getName() + "'s location");
+                    plugin.logDebug("Set spawn location of player " + event.getPlayer().getName() + " to " + ((PlayerTeleportRequest) request).targetName + ". " + target.getLocation());
                 }
             }
         }
@@ -397,10 +408,12 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         if (location.getServer().equals(plugin.getServerName())) {
             Player player = plugin.getServer().getPlayerExact(playerName);
             if (player != null) {
+                plugin.logDebug("Player " + playerName + " is online. Teleporting to " + location);
                 return PaperLib.teleportAsync(player, adapt(location)).whenComplete((success, ex) -> {
                     for (Consumer<String> c : consumer) {
                         c.accept(success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
                     }
+                    plugin.logDebug("Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
                 });
             }
         }
@@ -431,15 +444,18 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             if (player != null) {
                 World world = plugin.getServer().getWorld(worldName);
                 if (world == null) {
+                    plugin.logDebug("Player " + playerName + " is online but no world with the name " + worldName + " to teleport to exists?");
                     for (Consumer<String> c : consumer) {
                         c.accept("No world with the name " + worldName + " exists on the server!");
                     }
                     return CompletableFuture.completedFuture(false);
                 }
+                plugin.logDebug("Player " + playerName + " is online. Teleporting to spawn of world " + worldName);
                 return PaperLib.teleportAsync(player, world.getSpawnLocation()).whenComplete((success, ex) -> {
                     for (Consumer<String> c : consumer) {
                         c.accept(success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
                     }
+                    plugin.logDebug("Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
                 });
             }
         }
