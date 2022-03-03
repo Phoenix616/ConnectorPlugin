@@ -38,7 +38,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Locale;
+import java.util.Map;
 
 public final class VelocityConnectorPlugin implements ConnectorPlugin<Player> {
 
@@ -151,8 +153,13 @@ public final class VelocityConnectorPlugin implements ConnectorPlugin<Player> {
     }
 
     @Override
-    public String getGroup() {
+    public String getGlobalGroup() {
         return "";
+    }
+
+    @Override
+    public Map<String, String> getGroups() {
+        return Collections.emptyMap();
     }
 
     @Override

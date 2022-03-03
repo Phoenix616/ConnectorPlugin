@@ -28,7 +28,9 @@ import de.themoep.connectorplugin.bungee.connector.RedisConnector;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 
+import java.util.Collections;
 import java.util.Locale;
+import java.util.Map;
 import java.util.logging.Level;
 
 public final class BungeeConnectorPlugin extends BungeePlugin implements ConnectorPlugin<ProxiedPlayer> {
@@ -117,8 +119,13 @@ public final class BungeeConnectorPlugin extends BungeePlugin implements Connect
     }
 
     @Override
-    public String getGroup() {
+    public String getGlobalGroup() {
         return "";
+    }
+
+    @Override
+    public Map<String, String> getGroups() {
+        return Collections.emptyMap();
     }
 
     @Override

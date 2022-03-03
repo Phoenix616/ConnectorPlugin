@@ -67,7 +67,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
 
     private CommandMap commandMap = null;
 
-    private Cache<String, LoginRequest> loginRequests = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
+    private final Cache<String, LoginRequest> loginRequests = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
 
     public Bridge(BukkitConnectorPlugin plugin) {
         super(plugin);

@@ -10,6 +10,10 @@ messenger-type: redis
 # The group this server is in
 group: global
 
+# Put specific plugins into different groupings
+plugin-groups:
+  pluginname: specialgroup
+
 # Should be the same name as in the proxy config
 server-name: changeme
 

@@ -72,9 +72,6 @@ public class MqttConnection {
 
                 ByteArrayDataInput in = ByteStreams.newDataInput(message.getPayload());
                 String group = in.readUTF();
-                if (!group.equals(plugin.getGroup()) && !group.isEmpty() && !plugin.getGroup().isEmpty()) {
-                    return;
-                }
 
                 String target = in.readUTF();
                 if (target.startsWith(SERVER_PREFIX) && !target.equalsIgnoreCase(SERVER_PREFIX + plugin.getServerName())) {
@@ -86,7 +83,7 @@ public class MqttConnection {
                 in.readFully(messageData);
 
                 try {
-                    onMessage.accept(target, Message.fromByteArray(messageData));
+                    onMessage.accept(target, Message.fromByteArray(group, messageData));
                 } catch (IllegalArgumentException e) {
                     plugin.logError("Error while decoding message on " + topic + " MQTT topic! ", e);
                 } catch (VersionMismatchException e) {
@@ -102,7 +99,7 @@ public class MqttConnection {
         byte[] messageData = message.writeToByteArray();
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(plugin.getGroup());
+        out.writeUTF(message.getGroup());
         out.writeUTF(senderName != null ? senderName : "");
         out.writeInt(messageData.length);
         out.write(messageData);

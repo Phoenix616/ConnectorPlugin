@@ -22,6 +22,9 @@ import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import de.themoep.connectorplugin.connector.Connector;
 import de.themoep.connectorplugin.connector.MessageTarget;
 
+import java.util.Locale;
+import java.util.Map;
+
 public interface ConnectorPlugin<R> extends ConnectingPlugin {
 
     /**
@@ -50,7 +53,21 @@ public interface ConnectorPlugin<R> extends ConnectingPlugin {
 
     String getServerName();
 
-    String getGroup();
+    /**
+     * @deprecated Use {@link #getGroup(String)} or {@link #getGlobalGroup()}
+     */
+    @Deprecated
+    default String getGroup() {
+        return getGlobalGroup();
+    }
+
+    String getGlobalGroup();
+
+    Map<String, String> getGroups();
+
+    default String getGroup(String pluginName) {
+        return getGroups().get(pluginName.toLowerCase(Locale.ROOT));
+    }
 
     void runAsync(Runnable runnable);
 }

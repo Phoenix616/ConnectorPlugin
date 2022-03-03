@@ -82,9 +82,6 @@ public class RedisConnection {
 
                 ByteArrayDataInput in = ByteStreams.newDataInput(data);
                 String group = in.readUTF();
-                if (!group.equals(plugin.getGroup()) && !group.isEmpty() && !plugin.getGroup().isEmpty()) {
-                    return;
-                }
 
                 String target = in.readUTF();
                 if (target.startsWith(SERVER_PREFIX) && !target.equalsIgnoreCase(SERVER_PREFIX + plugin.getServerName())) {
@@ -96,7 +93,7 @@ public class RedisConnection {
                 in.readFully(messageData);
 
                 try {
-                    onMessage.accept(target, Message.fromByteArray(messageData));
+                    onMessage.accept(target, Message.fromByteArray(group, messageData));
                 } catch (IllegalArgumentException e) {
                     plugin.logError("Error while decoding message on " + channel + " redis channel! ", e);
                 } catch (VersionMismatchException e) {
@@ -130,7 +127,7 @@ public class RedisConnection {
         byte[] messageData = message.writeToByteArray();
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(plugin.getGroup());
+        out.writeUTF(message.getGroup());
         out.writeUTF(targetData != null ? targetData : "");
         out.writeInt(messageData.length);
         out.write(messageData);

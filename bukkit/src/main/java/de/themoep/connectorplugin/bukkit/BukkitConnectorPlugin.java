@@ -26,6 +26,7 @@ import de.themoep.connectorplugin.bukkit.connector.PluginMessageConnector;
 import de.themoep.connectorplugin.bukkit.connector.RedisConnector;
 import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import de.themoep.connectorplugin.connector.MessageTarget;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -33,7 +34,9 @@ import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.logging.Level;
 
 public final class BukkitConnectorPlugin extends JavaPlugin implements ConnectorPlugin<Player>, Listener {
@@ -41,7 +44,8 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
     private BukkitConnector connector;
     private Bridge bridge;
     private boolean debug = true;
-    private String group;
+    private String globalGroup;
+    private Map<String, String> pluginGroups;
     private String serverName;
 
     @Override
@@ -50,7 +54,14 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
         reloadConfig();
 
         debug = getConfig().getBoolean("debug");
-        group = getConfig().getString("group", "global");
+        globalGroup = getConfig().getString("group", "global");
+        pluginGroups = new HashMap<>();
+        ConfigurationSection pluginGroupsConfig = getConfig().getConfigurationSection("plugin-groups");
+        if (pluginGroupsConfig != null) {
+            for (String pluginName : pluginGroupsConfig.getKeys(false)) {
+                pluginGroups.put(pluginName.toLowerCase(Locale.ROOT), pluginGroupsConfig.getString(pluginName));
+            }
+        }
         serverName = getConfig().getString("server-name", "changeme");
         if ("changeme".equals(serverName)) {
             serverName = new File(".").getAbsoluteFile().getParentFile().getName();
@@ -135,8 +146,13 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
     }
 
     @Override
-    public String getGroup() {
-        return group;
+    public String getGlobalGroup() {
+        return globalGroup;
+    }
+
+    @Override
+    public Map<String, String> getGroups() {
+        return pluginGroups;
     }
 
     @Override

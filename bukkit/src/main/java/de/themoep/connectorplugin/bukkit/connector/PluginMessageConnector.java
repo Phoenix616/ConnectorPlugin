@@ -55,9 +55,6 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
 
         ByteArrayDataInput in = ByteStreams.newDataInput(data);
         String group = in.readUTF();
-        if (!group.equals(plugin.getGroup()) && !group.isEmpty() && !plugin.getGroup().isEmpty()) {
-            return;
-        }
 
         String target = in.readUTF();
         if (!isThis(target)) {
@@ -78,7 +75,7 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
         in.readFully(messageData);
 
         try {
-            handle( player, Message.fromByteArray(messageData));
+            handle( player, Message.fromByteArray(group, messageData));
         } catch (IllegalArgumentException e) {
             plugin.logError("Invalid message target! " + e.getMessage());
         } catch (VersionMismatchException e) {
@@ -91,7 +88,7 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
         byte[] messageData = message.writeToByteArray();
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(plugin.getGroup());
+        out.writeUTF(message.getGroup());
         out.writeUTF(targetData);
         out.writeInt(messageData.length);
         out.write(messageData);

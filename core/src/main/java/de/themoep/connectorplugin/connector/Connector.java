@@ -81,6 +81,21 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
                 break;
         }
 
+        // If message group is empty then this should reach all
+        if (!message.getGroup().isEmpty()) {
+            // Check per-plugin group.
+            String pluginGroup = plugin.getGroup(message.getSendingPlugin());
+            if (pluginGroup != null) {
+                if (!pluginGroup.isEmpty() && !pluginGroup.equals(message.getGroup())) {
+                    // Plugin group is not empty and doesn't accept all messages and the message group doesn't match the plugin group
+                    return;
+                }
+            } else if (!plugin.getGlobalGroup().isEmpty() && !message.getGroup().equals(plugin.getGlobalGroup())) {
+                // Global group is not empty and doesn't accept all messages and the message group doesn't match the global group
+                return;
+            }
+        }
+
         BiConsumer<R, byte[]> handler = handlers.get(message.getSendingPlugin().toLowerCase(Locale.ROOT), message.getAction());
         if (handler != null) {
             handler.accept(receiver, message.getData());
@@ -129,7 +144,12 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
             throw new UnsupportedOperationException("Cannot send message with target " + target + " from " + plugin.getSourceType());
         }
 
-        sendDataImplementation(targetData, new Message(target, plugin.getServerName(), sender.getName(), action, data));
+        String group = plugin.getGroup(sender.getName());
+        if (group == null) {
+            group = plugin.getGlobalGroup();
+        }
+
+        sendDataImplementation(targetData, new Message(group, target, plugin.getServerName(), sender.getName(), action, data));
     }
 
     protected abstract void sendDataImplementation(Object targetData, Message message);

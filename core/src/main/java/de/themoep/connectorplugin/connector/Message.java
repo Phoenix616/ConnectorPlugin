@@ -19,22 +19,27 @@ package de.themoep.connectorplugin.connector;/*
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-import de.themoep.connectorplugin.ConnectorPlugin;
 
 public class Message {
     private static final int VERSION = 2;
+    private final String group;
     private final MessageTarget target;
     private final String sendingServer;
     private final String sendingPlugin;
     private final String action;
     private final byte[] data;
 
-    public Message(MessageTarget target, String sendingServer, String sendingPlugin, String action, byte[] data) {
+    public Message(String group, MessageTarget target, String sendingServer, String sendingPlugin, String action, byte[] data) {
+        this.group = group;
         this.target = target;
         this.sendingServer = sendingServer;
         this.sendingPlugin = sendingPlugin;
         this.action = action;
         this.data = data;
+    }
+
+    public String getGroup() {
+        return group;
     }
 
     public MessageTarget getTarget() {
@@ -69,7 +74,7 @@ public class Message {
         return out.toByteArray();
     }
 
-    public static Message fromByteArray(byte[] messageData) throws VersionMismatchException {
+    public static Message fromByteArray(String group, byte[] messageData) throws VersionMismatchException {
         ByteArrayDataInput in = ByteStreams.newDataInput(messageData);
         int messageVersion = in.readInt();
         if (messageVersion < VERSION) {
@@ -84,7 +89,7 @@ public class Message {
         int length = in.readInt();
         byte[] data = new byte[length];
         in.readFully(data);
-        return new Message(target, senderServer, senderPlugin, action, data);
+        return new Message(group, target, senderServer, senderPlugin, action, data);
     }
 
 }

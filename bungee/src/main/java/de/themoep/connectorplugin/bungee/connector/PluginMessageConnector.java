@@ -52,17 +52,13 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
 
         ByteArrayDataInput in = ByteStreams.newDataInput(event.getData());
         String group = in.readUTF();
-        if (!group.equals(plugin.getGroup()) && !group.isEmpty() && !plugin.getGroup().isEmpty()) {
-            return;
-        }
-
         String target = in.readUTF();
 
         int messageLength = in.readInt();
         byte[] messageData = new byte[messageLength];
         in.readFully(messageData);
         try {
-            Message message = Message.fromByteArray(messageData);
+            Message message = Message.fromByteArray(group, messageData);
             switch (message.getTarget()) {
                 case ALL_WITH_PLAYERS:
                     sendToAllWithPlayers(event.getData(), null);
@@ -123,7 +119,7 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
         byte[] messageData = message.writeToByteArray();
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(plugin.getGroup());
+        out.writeUTF(message.getGroup());
         out.writeInt(messageData.length);
         out.write(messageData);
         byte[] dataToSend = out.toByteArray();
