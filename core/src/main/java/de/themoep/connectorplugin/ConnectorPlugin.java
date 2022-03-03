@@ -65,8 +65,13 @@ public interface ConnectorPlugin<R> extends ConnectingPlugin {
 
     Map<String, String> getGroups();
 
+    /**
+     * Get the group that should apply to the plugin (either per-plugin group or global one)
+     * @param pluginName The plugin's name
+     * @return The per-plugin group or the global one
+     */
     default String getGroup(String pluginName) {
-        return getGroups().get(pluginName.toLowerCase(Locale.ROOT));
+        return getGroups().getOrDefault(pluginName.toLowerCase(Locale.ROOT), getGlobalGroup());
     }
 
     void runAsync(Runnable runnable);

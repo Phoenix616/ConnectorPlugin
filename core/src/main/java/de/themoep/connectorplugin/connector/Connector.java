@@ -83,15 +83,10 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
 
         // If message group is empty then this should reach all
         if (!message.getGroup().isEmpty()) {
-            // Check per-plugin group.
-            String pluginGroup = plugin.getGroup(message.getSendingPlugin());
-            if (pluginGroup != null) {
-                if (!pluginGroup.isEmpty() && !pluginGroup.equals(message.getGroup())) {
-                    // Plugin group is not empty and doesn't accept all messages and the message group doesn't match the plugin group
-                    return;
-                }
-            } else if (!plugin.getGlobalGroup().isEmpty() && !message.getGroup().equals(plugin.getGlobalGroup())) {
-                // Global group is not empty and doesn't accept all messages and the message group doesn't match the global group
+            // Check group
+            String group = plugin.getGroup(message.getSendingPlugin());
+            if (!group.isEmpty() && !group.equals(message.getGroup())) {
+                // Group is not empty and doesn't accept all messages and the message group doesn't match the group
                 return;
             }
         }
@@ -145,10 +140,6 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
         }
 
         String group = plugin.getGroup(sender.getName());
-        if (group == null) {
-            group = plugin.getGlobalGroup();
-        }
-
         sendDataImplementation(targetData, new Message(group, target, plugin.getServerName(), sender.getName(), action, data));
     }
 
