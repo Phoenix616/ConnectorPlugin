@@ -33,9 +33,13 @@ import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.event.PlayerDisconnectEvent;
+import net.md_5.bungee.api.event.ServerConnectEvent;
 import net.md_5.bungee.api.plugin.Command;
+import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.TabExecutor;
+import net.md_5.bungee.event.EventHandler;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -46,12 +50,14 @@ import java.util.function.Consumer;
 
 import static de.themoep.connectorplugin.connector.Connector.PLAYER_PREFIX;
 
-public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlayer> {
+public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlayer> implements Listener {
 
     private Table<String, String, BridgedCommand<?, CommandSender>> commands = HashBasedTable.create();
 
     public Bridge(BungeeConnectorPlugin plugin) {
         super(plugin);
+
+        plugin.getProxy().getPluginManager().registerListener(plugin, this);
 
         registerHandler(Action.STARTED, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
@@ -304,6 +310,9 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
             return future;
         }
 
+        markTeleporting(playerName);
+        future.thenAccept(success -> unmarkTeleporting(playerName));
+
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
         out.writeUTF(plugin.getServerName());
@@ -349,6 +358,9 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
             }
             return future;
         }
+
+        markTeleporting(playerName);
+        future.thenAccept(success -> unmarkTeleporting(playerName));
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
@@ -404,6 +416,9 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
             }
             return future;
         }
+
+        markTeleporting(playerName);
+        future.thenAccept(success -> unmarkTeleporting(playerName));
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
@@ -594,6 +609,19 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
             }
             return Collections.emptySet();
         }
+    }
+
+    @EventHandler(priority = (byte) 128)
+    public void onPlayerJoin(ServerConnectEvent event) {
+        // check if it's a fresh proxy join
+        if (event.getPlayer().getServer() == null) {
+            unmarkTeleporting(event.getPlayer().getName());
+        }
+    }
+
+    @EventHandler(priority = (byte) 128)
+    public void onPlayerQuit(PlayerDisconnectEvent event) {
+        unmarkTeleporting(event.getPlayer().getName());
     }
 
     private class BridgedSender implements CommandSender {

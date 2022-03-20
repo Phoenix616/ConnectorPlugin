@@ -28,6 +28,10 @@ import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.InvocableCommand;
 import com.velocitypowered.api.command.SimpleCommand;
+import com.velocitypowered.api.event.PostOrder;
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
+import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
@@ -62,6 +66,8 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
 
     public Bridge(VelocityConnectorPlugin plugin) {
         super(plugin);
+
+        plugin.getProxy().getEventManager().register(plugin, this);
 
         registerHandler(Action.STARTED, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
@@ -309,6 +315,9 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
             return future;
         }
 
+        markTeleporting(playerName);
+        future.thenAccept(success -> unmarkTeleporting(playerName));
+
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
         out.writeUTF(plugin.getServerName());
@@ -354,6 +363,9 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
             }
             return future;
         }
+
+        markTeleporting(playerName);
+        future.thenAccept(success -> unmarkTeleporting(playerName));
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
@@ -409,6 +421,9 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
             }
             return future;
         }
+
+        markTeleporting(playerName);
+        future.thenAccept(success -> unmarkTeleporting(playerName));
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
@@ -573,6 +588,19 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
         for (String alias : command.getAliases()) {
             out.writeUTF(alias);
         }
+    }
+
+    @Subscribe(order = PostOrder.LAST)
+    public void onPlayerJoin(ServerPreConnectEvent event) {
+        // check if it's a fresh proxy join
+        if (!event.getPlayer().getCurrentServer().isPresent()) {
+            unmarkTeleporting(event.getPlayer().getUsername());
+        }
+    }
+
+    @Subscribe(order = PostOrder.LAST)
+    public void onPlayerQuit(DisconnectEvent event) {
+        unmarkTeleporting(event.getPlayer().getUsername());
     }
 
     private class ForwardingCommand implements SimpleCommand, CommandMeta {

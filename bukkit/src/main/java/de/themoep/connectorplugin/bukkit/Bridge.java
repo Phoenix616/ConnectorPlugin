@@ -41,7 +41,10 @@ import org.bukkit.conversations.Conversation;
 import org.bukkit.conversations.ConversationAbandonedEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
@@ -98,12 +101,16 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
                 return;
             }
 
+            markTeleporting(playerName);
+
             Player player = plugin.getServer().getPlayer(playerName);
             if (player != null) {
                 plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to " + location);
                 PaperLib.teleportAsync(player, adapt(location)).whenComplete((success, ex) -> {
                     sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
                     plugin.logDebug("[M] Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
+
+                    unmarkTeleporting(playerName);
                 });
             } else {
                 loginRequests.put(playerName.toLowerCase(Locale.ROOT), new LocationTeleportRequest(senderServer, id, location));
@@ -136,12 +143,16 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
                 return;
             }
 
+            markTeleporting(playerName);
+
             Player player = plugin.getServer().getPlayer(playerName);
             if (player != null) {
                 plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to spawn of world " + worldName);
                 PaperLib.teleportAsync(player, world.getSpawnLocation()).whenComplete((success, ex) -> {
                     sendResponse(senderServer, id, success, success ? "Player teleported to spawn of " + worldName + "!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
                     plugin.logDebug("[M] Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
+
+                    unmarkTeleporting(playerName);
                 });
             } else {
                 loginRequests.put(playerName.toLowerCase(Locale.ROOT), new LocationTeleportRequest(senderServer, id, adapt(world.getSpawnLocation())));
@@ -162,15 +173,19 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             String playerName = in.readUTF();
             String targetName = in.readUTF();
 
+            markTeleporting(playerName);
+
             Player target = plugin.getServer().getPlayer(targetName);
             if (target != null) {
                 Player player = plugin.getServer().getPlayer(playerName);
                 if (player != null) {
-                        plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to player " + targetName);
-                        PaperLib.teleportAsync(player, target.getLocation()).whenComplete((success, ex) -> {
-                            sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
-                            plugin.logDebug("[M] Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
-                        });
+                    plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to player " + targetName);
+                    PaperLib.teleportAsync(player, target.getLocation()).whenComplete((success, ex) -> {
+                        sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                        plugin.logDebug("[M] Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
+
+                        unmarkTeleporting(playerName);
+                    });
                 } else {
                     loginRequests.put(playerName.toLowerCase(Locale.ROOT), new PlayerTeleportRequest(senderServer, id, targetName));
                     if (!plugin.getConnector().requiresPlayer() || !plugin.getServer().getOnlinePlayers().isEmpty()) {
@@ -316,6 +331,16 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        unmarkTeleporting(event.getPlayer().getName());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        unmarkTeleporting(event.getPlayer().getName());
+    }
+
     public Location adapt(LocationInfo location) {
         World world = plugin.getServer().getWorld(location.getWorld());
         if (world == null) {
@@ -405,6 +430,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
      * @return A future about whether the player could be teleported
      */
     public CompletableFuture<Boolean> teleport(String playerName, LocationInfo location, Consumer<String>... consumer) {
+        markTeleporting(playerName);
         if (location.getServer().equals(plugin.getServerName())) {
             Player player = plugin.getServer().getPlayerExact(playerName);
             if (player != null) {
@@ -414,6 +440,8 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
                         c.accept(success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
                     }
                     plugin.logDebug("Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
+
+                    unmarkTeleporting(playerName);
                 });
             }
         }
@@ -439,6 +467,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
      * @return A future about whether the player could be teleported
      */
     public CompletableFuture<Boolean> teleport(String playerName, String serverName, String worldName, Consumer<String>... consumer) {
+        markTeleporting(playerName);
         if (serverName.equals(plugin.getServerName())) {
             Player player = plugin.getServer().getPlayerExact(playerName);
             if (player != null) {
@@ -448,6 +477,8 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
                     for (Consumer<String> c : consumer) {
                         c.accept("No world with the name " + worldName + " exists on the server!");
                     }
+
+                    unmarkTeleporting(playerName);
                     return CompletableFuture.completedFuture(false);
                 }
                 plugin.logDebug("Player " + playerName + " is online. Teleporting to spawn of world " + worldName);
@@ -456,6 +487,8 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
                         c.accept(success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
                     }
                     plugin.logDebug("Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
+
+                    unmarkTeleporting(playerName);
                 });
             }
         }
@@ -481,6 +514,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
      * @return A future about whether the player could be teleported
      */
     public CompletableFuture<Boolean> teleport(String playerName, String targetName, Consumer<String>... consumer) {
+        markTeleporting(playerName);
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();

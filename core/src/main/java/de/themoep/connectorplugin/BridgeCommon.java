@@ -26,7 +26,10 @@ import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import de.themoep.connectorplugin.connector.VersionMismatchException;
 
+import java.util.HashSet;
+import java.util.Locale;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -36,6 +39,7 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
 
     protected final Cache<Long, ResponseHandler<?>> responses = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
     protected final Cache<Long, Consumer<String>[]> consumers = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build();
+    private final Set<String> isTeleporting = new HashSet<>();
 
     protected static final Random RANDOM = new Random();
 
@@ -175,6 +179,23 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         public byte[] getData() {
             return data;
         }
+    }
+
+    /**
+     * Get whether a player with that name is currently teleporting.
+     * Useful for checking of a quit/join is from a teleport or not.
+     * @return Whether the player is currently teleporting with ConnectorPlugin
+     */
+    public boolean isTeleporting(String playerName) {
+        return isTeleporting.contains(playerName.toLowerCase(Locale.ROOT));
+    }
+
+    protected boolean markTeleporting(String playerName) {
+        return isTeleporting.add(playerName.toLowerCase(Locale.ROOT));
+    }
+
+    protected boolean unmarkTeleporting(String playerName) {
+        return isTeleporting.remove(playerName.toLowerCase(Locale.ROOT));
     }
 
     public static class Action {
