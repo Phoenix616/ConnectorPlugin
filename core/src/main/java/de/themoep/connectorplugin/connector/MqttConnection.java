@@ -74,9 +74,6 @@ public class MqttConnection {
                 String group = in.readUTF();
 
                 String target = in.readUTF();
-                if (target.startsWith(SERVER_PREFIX) && !target.equalsIgnoreCase(SERVER_PREFIX + plugin.getServerName())) {
-                    return;
-                }
 
                 int messageLength = in.readInt();
                 byte[] messageData = new byte[messageLength];
