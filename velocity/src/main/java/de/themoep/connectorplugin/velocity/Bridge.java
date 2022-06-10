@@ -613,7 +613,7 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
         @Override
         public void execute(Invocation invocation) {
             if (invocation.source() instanceof Player) {
-                ((Player) invocation.source()).spoofChatInput("/" + invocation.alias() + " " + String.join(" ", invocation.arguments()));
+                runServerPlayerCommand((Player) invocation.source(), invocation.alias() + " " + String.join(" ", invocation.arguments()));
             } else {
                 command.onCommand(invocation.source(), null, invocation.alias(), invocation.arguments());
             }

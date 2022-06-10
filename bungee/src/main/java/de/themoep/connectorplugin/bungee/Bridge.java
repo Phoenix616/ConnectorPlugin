@@ -596,7 +596,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
         @Override
         public void execute(CommandSender sender, String[] args) {
             if (sender instanceof ProxiedPlayer) {
-                ((ProxiedPlayer) sender).chat("/" + getName() + " " + String.join(" ", args));
+                runServerPlayerCommand((ProxiedPlayer) sender, getName() + " " + String.join(" ", args));
             } else {
                 command.onCommand(sender, null, getName(), args);
             }
