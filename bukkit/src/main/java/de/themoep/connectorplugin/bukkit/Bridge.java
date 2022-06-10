@@ -43,6 +43,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.permissions.Permission;
@@ -228,6 +229,15 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             if (player == null) {
                 plugin.logDebug("Could not find player " + playerName + "/" + playerId + " on this server to execute command " + command);
                 sendResponse(senderServer, id, false, "Could not find player " + playerName + "/" + playerId + " on this server to execute command " + command);
+                return;
+            }
+
+            PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(player, command);
+            plugin.getServer().getPluginManager().callEvent(event);
+
+            if (event.isCancelled()) {
+                plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + senderServer + " was cancelled by a PlayerCommandPreprocessEvent listener!");
+                sendResponse(senderServer, id, false, "Command " + command + " was cancelled by a PlayerCommandPreprocessEvent listener");
                 return;
             }
 
