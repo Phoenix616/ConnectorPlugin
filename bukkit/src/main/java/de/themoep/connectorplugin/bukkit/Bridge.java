@@ -232,7 +232,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
                 return;
             }
 
-            PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(player, command);
+            PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(player, "/" + command);
             plugin.getServer().getPluginManager().callEvent(event);
 
             if (event.isCancelled()) {
