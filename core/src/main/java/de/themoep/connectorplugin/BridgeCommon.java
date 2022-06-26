@@ -30,9 +30,12 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import static de.themoep.connectorplugin.connector.Connector.PLAYER_PREFIX;
 
 public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
     protected final P plugin;
@@ -62,6 +65,86 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
                 plugin.logError(e.getMessage() + " Ignoring message!");
             }
         });
+    }
+
+    /**
+     * Run a console command on the target server
+     * @param server    The server to run teh command on
+     * @param command   The command to run
+     * @param consumer  Optional Consumer (or multiple) for the messages triggered by the command
+     * @return A future for whether the command was run successfully
+     */
+    public CompletableFuture<Boolean> runServerConsoleCommand(String server, String command, Consumer<String>... consumer) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeUTF(server);
+        out.writeLong(id);
+        out.writeUTF(command);
+        responses.put(id, new ResponseHandler.Boolean(future));
+        if (consumer != null && consumer.length > 0) {
+            consumers.put(id, consumer);
+        }
+        sendData(Action.CONSOLE_COMMAND, MessageTarget.SERVER, out.toByteArray());
+        return future;
+    }
+
+    /**
+     * Run a console command on a specific other proxy
+     * @param proxy    The proxy to run the command on
+     * @param command   The command to run
+     * @param consumer  Optional Consumer (or multiple) for the messages triggered by the command
+     * @return A future for whether the command was run successfully
+     */
+    public CompletableFuture<Boolean> runProxyConsoleCommand(String proxy, String command, Consumer<String>... consumer) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeUTF(proxy);
+        out.writeLong(id);
+        out.writeUTF(command);
+        responses.put(id, new ResponseHandler.Boolean(future));
+        if (consumer != null && consumer.length > 0) {
+            consumers.put(id, consumer);
+        }
+        sendData(Action.CONSOLE_COMMAND, MessageTarget.PROXY, out.toByteArray());
+        return future;
+    }
+
+    /**
+     * Get the location a player is at
+     * @param player    The player to get the location for
+     * @return A future for when the location was queried
+     */
+    public CompletableFuture<LocationInfo> getLocation(String player) {
+        CompletableFuture<LocationInfo> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(player);
+        responses.put(id, new ResponseHandler.Location(future));
+        sendData(Action.GET_LOCATION, MessageTarget.SERVER, PLAYER_PREFIX + player, out.toByteArray());
+        return future;
+    }
+
+    /**
+     * Get the server a player is connected to
+     * @param player    The player to get the server for
+     * @return A future for when the server was queried
+     */
+    public CompletableFuture<String> getServer(String player) {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(player);
+        responses.put(id, new ResponseHandler.String(future));
+        sendData(Action.GET_SERVER, MessageTarget.ALL_PROXIES, PLAYER_PREFIX + player, out.toByteArray());
+        return future;
     }
 
     /**

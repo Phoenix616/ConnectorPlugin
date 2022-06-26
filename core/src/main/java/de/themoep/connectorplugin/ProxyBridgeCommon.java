@@ -18,7 +18,12 @@ package de.themoep.connectorplugin;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.connector.MessageTarget;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import static de.themoep.connectorplugin.connector.Connector.PROXY_ID_PREFIX;
 
@@ -35,5 +40,26 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
                 target.startsWith(PROXY_ID_PREFIX) ? MessageTarget.PROXY : MessageTarget.SERVER,
                 target,
                 out);
+    }
+
+    /**
+     * Run a console command on all other proxies
+     * @param command   The command to run
+     * @param consumer  Optional Consumer (or multiple) for the messages triggered by the command
+     * @return A future for whether the command was run successfully
+     */
+    public CompletableFuture<Boolean> runProxyConsoleCommand(String command, Consumer<String>... consumer) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(command);
+        responses.put(id, new ResponseHandler.Boolean(future));
+        if (consumer != null && consumer.length > 0) {
+            consumers.put(id, consumer);
+        }
+        sendData(Action.CONSOLE_COMMAND, MessageTarget.OTHER_PROXIES, out.toByteArray());
+        return future;
     }
 }

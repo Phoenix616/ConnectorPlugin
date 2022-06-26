@@ -458,15 +458,16 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
      * @return A future for when the location was queried
      */
     public CompletableFuture<LocationInfo> getLocation(ProxiedPlayer player) {
-        CompletableFuture<LocationInfo> future = new CompletableFuture<>();
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
-        out.writeLong(id);
-        out.writeUTF(player.getName());
-        responses.put(id, new ResponseHandler.Location(future));
-        sendData(Action.GET_LOCATION, MessageTarget.SERVER, player, out.toByteArray());
-        return future;
+        return getLocation(player.getName());
+    }
+
+    /**
+     * Get the server a player is connected to
+     * @param player    The player to get the server for
+     * @return A future for when the server was queried
+     */
+    public CompletableFuture<String> getServer(ProxiedPlayer player) {
+        return getServer(player.getName());
     }
 
     /**
@@ -488,50 +489,6 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
         out.writeUTF(command);
         responses.put(id, new ResponseHandler.Boolean(future));
         sendData(Action.PLAYER_COMMAND, MessageTarget.SERVER, player, out.toByteArray());
-        return future;
-    }
-
-    /**
-     * Run a console command on the target server
-     * @param server    The server to run teh command on
-     * @param command   The command to run
-     * @param consumer  Optional Consumer (or multiple) for the messages triggered by the command
-     * @return A future for whether the command was run successfully
-     */
-    public CompletableFuture<Boolean> runServerConsoleCommand(String server, String command, Consumer<String>... consumer) {
-        CompletableFuture<Boolean> future = new CompletableFuture<>();
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
-        out.writeUTF(server);
-        out.writeLong(id);
-        out.writeUTF(command);
-        responses.put(id, new ResponseHandler.Boolean(future));
-        if (consumer != null && consumer.length > 0) {
-            consumers.put(id, consumer);
-        }
-        sendData(Action.CONSOLE_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
-        return future;
-    }
-
-    /**
-     * Run a console command on all other proxies
-     * @param command   The command to run
-     * @param consumer  Optional Consumer (or multiple) for the messages triggered by the command
-     * @return A future for whether the command was run successfully
-     */
-    public CompletableFuture<Boolean> runProxyConsoleCommand(String command, Consumer<String>... consumer) {
-        CompletableFuture<Boolean> future = new CompletableFuture<>();
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
-        out.writeLong(id);
-        out.writeUTF(command);
-        responses.put(id, new ResponseHandler.Boolean(future));
-        if (consumer != null && consumer.length > 0) {
-            consumers.put(id, consumer);
-        }
-        sendData(Action.CONSOLE_COMMAND, MessageTarget.OTHER_PROXIES, out.toByteArray());
         return future;
     }
 
