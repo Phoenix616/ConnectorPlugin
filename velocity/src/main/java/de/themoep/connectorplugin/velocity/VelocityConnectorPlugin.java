@@ -42,6 +42,8 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 
+import static de.themoep.connectorplugin.connector.Connector.PROXY_ID_PREFIX;
+
 public final class VelocityConnectorPlugin implements ConnectorPlugin<Player> {
 
     private final ProxyServer proxy;
@@ -149,7 +151,7 @@ public final class VelocityConnectorPlugin implements ConnectorPlugin<Player> {
 
     @Override
     public String getServerName() {
-        return "proxy:" + serverId;
+        return PROXY_ID_PREFIX + serverId;
     }
 
     @Override

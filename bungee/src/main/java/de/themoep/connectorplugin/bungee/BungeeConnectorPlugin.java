@@ -33,6 +33,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
 
+import static de.themoep.connectorplugin.connector.Connector.PROXY_ID_PREFIX;
+
 public final class BungeeConnectorPlugin extends BungeePlugin implements ConnectorPlugin<ProxiedPlayer> {
 
     private BungeeConnector connector;
@@ -115,7 +117,7 @@ public final class BungeeConnectorPlugin extends BungeePlugin implements Connect
 
     @Override
     public String getServerName() {
-        return "proxy:" + getProxy().getConfig().getUuid();
+        return PROXY_ID_PREFIX + getProxy().getConfig().getUuid();
     }
 
     @Override
