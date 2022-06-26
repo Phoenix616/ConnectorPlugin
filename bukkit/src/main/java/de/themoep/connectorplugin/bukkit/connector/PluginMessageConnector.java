@@ -38,7 +38,7 @@ import java.util.logging.Level;
 
 public class PluginMessageConnector extends BukkitConnector implements PluginMessageListener, Listener {
 
-    private Deque<byte[]> queue = new ArrayDeque<>();
+    private final Deque<byte[]> queue = new ArrayDeque<>();
 
     public PluginMessageConnector(BukkitConnectorPlugin plugin) {
         super(plugin, true);
@@ -100,14 +100,12 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
         }
         if (player != null) {
             player.sendPluginMessage(plugin, plugin.getMessageChannel(), dataToSend);
-        } else if (message.getTarget() != MessageTarget.PROXY) {
+        } else {
             if (plugin.getServer().getOnlinePlayers().isEmpty()) {
                 queue.add(dataToSend);
             } else {
                 plugin.getServer().getOnlinePlayers().iterator().next().sendPluginMessage(plugin, plugin.getMessageChannel(), dataToSend);
             }
-        } else {
-            plugin.logError("Could not send data to " + message.getTarget() + " as player wasn't specified!");
         }
     }
 

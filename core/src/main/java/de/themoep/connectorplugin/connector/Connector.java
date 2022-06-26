@@ -74,11 +74,6 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
                     return;
                 }
                 break;
-            case PROXY:
-                if (receiver == null) {
-                    return;
-                }
-                break;
         }
 
         // If message group is empty then this should reach all

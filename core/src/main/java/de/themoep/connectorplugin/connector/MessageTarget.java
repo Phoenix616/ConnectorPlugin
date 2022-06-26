@@ -37,15 +37,14 @@ public enum MessageTarget {
     OTHERS_QUEUE(Type.SERVER),
     /**
      * Send to the players current server.<br>
-     * Requires a server name or player parameter.<br>
+     * Requires a server name or player parameter.
      */
     SERVER(Type.SERVER),
     /**
      * Send to the players current proxy.<br>
-     * Requires a player parameter.<br>
-     * Can only be sent from a {@link Type#SERVER}
+     * Requires a proxy id or player parameter
      */
-    PROXY(Type.PROXY, Type.SERVER),
+    PROXY(Type.PROXY),
     /**
      * Send to all connected proxies
      */

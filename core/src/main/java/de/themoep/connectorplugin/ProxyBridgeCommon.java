@@ -32,7 +32,7 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
     protected void sendResponseData(String target, byte[] out) {
         sendData(
                 Action.RESPONSE,
-                target.startsWith(PROXY_ID_PREFIX) ? MessageTarget.OTHER_PROXIES : MessageTarget.SERVER,
+                target.startsWith(PROXY_ID_PREFIX) ? MessageTarget.PROXY : MessageTarget.SERVER,
                 target,
                 out);
     }
