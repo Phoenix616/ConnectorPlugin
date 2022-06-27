@@ -68,6 +68,64 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
     }
 
     /**
+     * Teleport a player to a certain location in the network
+     * @param player        The player to teleport
+     * @param location      The location to teleport to
+     * @param consumer      Details about the teleport
+     * @return A future about whether the player could be teleported
+     */
+    public abstract CompletableFuture<Boolean> teleport(R player, LocationInfo location, Consumer<String>... consumer);
+
+    /**
+     * Teleport a player to a certain location in the network
+     * @param playerName    The name of the player to teleport
+     * @param location      The location to teleport to
+     * @param consumer      Details about the teleport
+     * @return A future about whether the player could be teleported
+     */
+    public abstract CompletableFuture<Boolean> teleport(String playerName, LocationInfo location, Consumer<String>... consumer);
+
+
+    /**
+     * Teleport a player to a certain location in the network
+     * @param playerName    The name of the player to teleport
+     * @param serverName    The target server
+     * @param worldName     The target world
+     * @param consumer      Details about the teleport
+     * @return A future about whether the player could be teleported
+     */
+    public abstract CompletableFuture<Boolean> teleport(String playerName, String serverName, String worldName, Consumer<String>... consumer);
+
+
+    /**
+     * Teleport a player to a certain location in the network
+     * @param player        The player to teleport
+     * @param serverName    The target server
+     * @param worldName     The target world
+     * @param consumer      Details about the teleport
+     * @return A future about whether the player could be teleported
+     */
+    public abstract CompletableFuture<Boolean> teleport(R player, String serverName, String worldName, Consumer<String>... consumer);
+
+    /**
+     * Teleport a player to a certain other player in the network
+     * @param player    The player to teleport
+     * @param target    The target player
+     * @param consumer  Details about the teleport
+     * @return A future about whether the player could be teleported
+     */
+    public abstract CompletableFuture<Boolean> teleport(R player, R target, Consumer<String>... consumer);
+
+    /**
+     * Teleport a player to a certain other player in the network
+     * @param playerName    The name of the player to teleport
+     * @param targetName    The name of the target player
+     * @param consumer      Details about the teleport
+     * @return A future about whether the player could be teleported
+     */
+    public abstract CompletableFuture<Boolean> teleport(String playerName, String targetName, Consumer<String>... consumer);
+
+    /**
      * Run a console command on the target server
      * @param server    The server to run teh command on
      * @param command   The command to run
@@ -118,6 +176,13 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
      * @param player    The player to get the location for
      * @return A future for when the location was queried
      */
+    public abstract CompletableFuture<LocationInfo> getLocation(R player);
+
+    /**
+     * Get the location a player is at
+     * @param player    The player to get the location for
+     * @return A future for when the location was queried
+     */
     public CompletableFuture<LocationInfo> getLocation(String player) {
         CompletableFuture<LocationInfo> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -129,6 +194,13 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         sendData(Action.GET_LOCATION, MessageTarget.SERVER, PLAYER_PREFIX + player, out.toByteArray());
         return future;
     }
+
+    /**
+     * Get the server a player is connected to
+     * @param player    The player to get the server for
+     * @return A future for when the server was queried
+     */
+    public abstract CompletableFuture<String> getServer(R player);
 
     /**
      * Get the server a player is connected to

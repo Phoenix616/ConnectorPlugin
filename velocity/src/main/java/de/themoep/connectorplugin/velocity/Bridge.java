@@ -285,13 +285,12 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
         sendResponse(PLAYER_PREFIX + player, id, success, messages);
     }
 
-    /**
-     * Teleport a player to a certain location in the network
-     * @param playerName    The name of the player to teleport
-     * @param location      The location to teleport to
-     * @param consumer      Details about the teleport
-     * @return A future about whether the player could be teleported
-     */
+    @Override
+    public CompletableFuture<Boolean> teleport(Player player, LocationInfo location, Consumer<String>... consumer) {
+        return teleport(player.getUsername(), location, consumer);
+    }
+
+    @Override
     public CompletableFuture<Boolean> teleport(String playerName, LocationInfo location, Consumer<String>... consumer) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
@@ -333,14 +332,12 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
         return future;
     }
 
-    /**
-     * Teleport a player to a certain location in the network
-     * @param playerName    The name of the player to teleport
-     * @param serverName    The target server
-     * @param worldName     The target world
-     * @param consumer      Details about the teleport
-     * @return A future about whether the player could be teleported
-     */
+    @Override
+    public CompletableFuture<Boolean> teleport(Player player, String serverName, String worldName, Consumer<String>... consumer) {
+        return teleport(player.getUsername(), serverName, worldName, consumer);
+    }
+
+    @Override
     public CompletableFuture<Boolean> teleport(String playerName, String serverName, String worldName, Consumer<String>... consumer) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
@@ -383,13 +380,12 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
         return future;
     }
 
-    /**
-     * Teleport a player to a certain other player in the network
-     * @param playerName    The name of the player to teleport
-     * @param targetName    The name of the target player
-     * @param consumer      Details about the teleport
-     * @return A future about whether the player could be teleported
-     */
+    @Override
+    public CompletableFuture<Boolean> teleport(Player player, Player target, Consumer<String>... consumer) {
+        return teleport(player.getUsername(), target.getUsername(), consumer);
+    }
+
+    @Override
     public CompletableFuture<Boolean> teleport(String playerName, String targetName, Consumer<String>... consumer) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
