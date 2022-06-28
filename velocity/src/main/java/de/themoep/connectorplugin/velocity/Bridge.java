@@ -26,7 +26,6 @@ import com.google.common.io.ByteStreams;
 import com.mojang.brigadier.tree.CommandNode;
 import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.command.InvocableCommand;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
@@ -36,6 +35,7 @@ import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import de.themoep.connectorplugin.BridgedCommand;
+import de.themoep.connectorplugin.BridgedSuggestions;
 import de.themoep.connectorplugin.LocationInfo;
 import de.themoep.connectorplugin.ProxyBridgeCommon;
 import de.themoep.connectorplugin.ResponseHandler;
@@ -574,10 +574,18 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
 
         @Override
         public List<String> suggest(Invocation invocation) {
-            if (command instanceof InvocableCommand && invocation.source().hasPermission(command.getPermission() + ".tabcomplete." + invocation.alias())) {
-                return ((InvocableCommand<Invocation>) command).suggest(invocation);
+            if (command instanceof BridgedSuggestions && invocation.source().hasPermission(command.getPermission() + ".tabcomplete." + invocation.alias())) {
+                return ((BridgedSuggestions<CommandSource>) command).suggest(invocation.source(), invocation.alias(), invocation.arguments());
             }
             return Collections.emptyList();
+        }
+
+        @Override
+        public CompletableFuture<List<String>> suggestAsync(Invocation invocation) {
+            if (command instanceof BridgedSuggestions && invocation.source().hasPermission(command.getPermission() + ".tabcomplete." + invocation.alias())) {
+                return ((BridgedSuggestions<CommandSource>) command).suggestAsync(invocation.source(), invocation.alias(), invocation.arguments());
+            }
+            return CompletableFuture.completedFuture(Collections.emptyList());
         }
 
         @Override

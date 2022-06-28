@@ -24,6 +24,7 @@ import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.BridgedCommand;
+import de.themoep.connectorplugin.BridgedSuggestions;
 import de.themoep.connectorplugin.LocationInfo;
 import de.themoep.connectorplugin.ProxyBridgeCommon;
 import de.themoep.connectorplugin.ResponseHandler;
@@ -557,8 +558,8 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
 
         @Override
         public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
-            if (command instanceof TabExecutor && sender.hasPermission(command.getPermission() + ".tabcomplete." + getName())) {
-                return ((TabExecutor) command).onTabComplete(sender, args);
+            if (command instanceof BridgedSuggestions && sender.hasPermission(command.getPermission() + ".tabcomplete." + getName())) {
+                return ((BridgedSuggestions<CommandSender>) command).suggest(sender, getName(), args);
             }
             return Collections.emptySet();
         }

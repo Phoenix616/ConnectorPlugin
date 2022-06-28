@@ -34,8 +34,6 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.function.BiConsumer;
 
-import static de.themoep.connectorplugin.connector.Connector.SERVER_PREFIX;
-
 public class RedisConnection {
 
     private final ConnectorPlugin plugin;

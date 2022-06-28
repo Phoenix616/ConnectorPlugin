@@ -7,7 +7,7 @@
     <parent>
         <groupId>de.themoep.connectorplugin</groupId>
         <artifactId>parent</artifactId>
-        <version>1.3-SNAPSHOT</version>
+        <version>1.4-SNAPSHOT</version>
     </parent>
 
     <artifactId>velocity</artifactId>

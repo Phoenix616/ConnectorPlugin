@@ -20,6 +20,10 @@ package de.themoep.connectorplugin;
 
 import de.themoep.connectorplugin.connector.ConnectingPlugin;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
 public abstract class BridgedCommand<P extends ConnectingPlugin, S> {
     private final P plugin;
     private final String name;
