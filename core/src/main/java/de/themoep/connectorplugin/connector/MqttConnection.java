@@ -21,14 +21,14 @@ import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.ConnectorPlugin;
+import org.eclipse.paho.mqttv5.client.IMqttMessageListener;
 import org.eclipse.paho.mqttv5.client.MqttClient;
 import org.eclipse.paho.mqttv5.client.MqttConnectionOptions;
 import org.eclipse.paho.mqttv5.common.MqttException;
+import org.eclipse.paho.mqttv5.common.MqttSubscription;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.BiConsumer;
-
-import static de.themoep.connectorplugin.connector.Connector.SERVER_PREFIX;
 
 public class MqttConnection {
 
@@ -61,7 +61,7 @@ public class MqttConnection {
             client = new MqttClient(brokerURI, clientID);
             client.connect(conOpts);
 
-            client.subscribe(plugin.getMessageChannel(), 1, (topic, message) -> {
+            client.subscribe(new MqttSubscription[]{new MqttSubscription(plugin.getMessageChannel())}, new IMqttMessageListener[] {(topic, message) -> {
                 if (!topic.equals(plugin.getMessageChannel())) {
                     return;
                 }
@@ -86,7 +86,7 @@ public class MqttConnection {
                 } catch (VersionMismatchException e) {
                     plugin.logWarning(e.getMessage() + ". Ignoring message!");
                 }
-            });
+            }});
         } catch (MqttException e) {
             throw new IllegalArgumentException(e);
         }
