@@ -86,7 +86,7 @@ public class MqttConnection {
                 } catch (VersionMismatchException e) {
                     plugin.logWarning(e.getMessage() + ". Ignoring message!");
                 }
-            }});
+            }}).waitForCompletion(10000);
         } catch (MqttException e) {
             throw new IllegalArgumentException(e);
         }
