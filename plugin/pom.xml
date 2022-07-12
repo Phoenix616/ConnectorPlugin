@@ -114,10 +114,16 @@
                         <relocation>
                             <pattern>io.lettuce</pattern>
                             <shadedPattern>de.themoep.connectorplugin.lib.lettuce</shadedPattern>
+                            <excludes>
+                                <exclude>io.lettuce.core.support.LettuceCdiExtension</exclude>
+                            </excludes>
                         </relocation>
                         <relocation>
                             <pattern>io.netty</pattern>
                             <shadedPattern>de.themoep.connectorplugin.lib.netty</shadedPattern>
+                            <excludes>
+                                <exclude>io.netty.util.internal.Hidden</exclude>
+                            </excludes>
                         </relocation>
                         <relocation>
                             <pattern>reactor</pattern>
@@ -130,6 +136,13 @@
                         <relocation>
                             <pattern>org.eclipse.paho</pattern>
                             <shadedPattern>de.themoep.connectorplugin.lib.paho</shadedPattern>
+                            <excludes>
+                                <exclude>org.eclipse.paho.mqttv5.client.internal.TCPNetworkModuleFactory</exclude>
+                                <exclude>org.eclipse.paho.mqttv5.client.internal.SSLNetworkModuleFactory</exclude>
+                                <exclude>org.eclipse.paho.mqttv5.client.websocket.WebSocketNetworkModuleFactory</exclude>
+                                <exclude>org.eclipse.paho.mqttv5.client.websocket.WebSocketSecureNetworkModuleFactory</exclude>
+                                <exclude>org.eclipse.paho.mqttv5.client.spi.*</exclude>
+                            </excludes>
                         </relocation>
                         <relocation>
                             <pattern>io.papermc.lib</pattern>
