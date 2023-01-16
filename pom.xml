@@ -18,11 +18,61 @@
         <minecraft.plugin.version>${project.version} ${buildDescription}</minecraft.plugin.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <library.guava.version>21.0</library.guava.version>
-        <library.lettuce.version>6.1.2.RELEASE</library.lettuce.version>
-        <library.paho.version>1.2.5</library.paho.version>
-        <library.paperlib.version>1.0.6</library.paperlib.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Should be kept in sync with Spigot/Bungee -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>21.0</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.lettuce</groupId>
+                <artifactId>lettuce-core</artifactId>
+                <version>6.1.2.RELEASE</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.paho</groupId>
+                <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
+                <version>1.2.5</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.spigotmc</groupId>
+                <artifactId>spigot-api</artifactId>
+                <version>1.16.3-R0.1-SNAPSHOT</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.papermc</groupId>
+                <artifactId>paperlib</artifactId>
+                <version>1.0.6</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>net.md-5</groupId>
+                <artifactId>bungeecord-api</artifactId>
+                <version>1.16-R0.1-SNAPSHOT</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>de.themoep</groupId>
+                <artifactId>bungeeplugin</artifactId>
+                <version>1.2-SNAPSHOT</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.velocitypowered</groupId>
+                <artifactId>velocity-api</artifactId>
+                <version>3.0.1</version>
+                <scope>provided</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <modules>
         <module>core</module>

@@ -47,19 +47,21 @@
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
-            <version>${library.lettuce.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.paho</groupId>
             <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
-            <version>${library.paho.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.papermc</groupId>
             <artifactId>paperlib</artifactId>
-            <version>${library.paperlib.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>de.themoep</groupId>
+            <artifactId>bungeeplugin</artifactId>
             <scope>compile</scope>
         </dependency>
     </dependencies>
