@@ -96,7 +96,7 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
     @EventHandler
     public void onPluginDisable(PluginDisableEvent event) {
         if (event.getPlugin() instanceof ConnectingPlugin) {
-            connector.unregisterHandlers((ConnectingPlugin) event.getPlugin());
+            connector.unregisterMessageHandlers((ConnectingPlugin) event.getPlugin());
         }
     }
 

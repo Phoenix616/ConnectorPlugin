@@ -25,6 +25,7 @@ import de.themoep.connectorplugin.ConnectorPlugin;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 public abstract class Connector<P extends ConnectorPlugin, R> {
     protected final P plugin;
@@ -42,7 +43,7 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
 
     private final boolean requiresPlayer;
 
-    private Table<String, String, BiConsumer<R, byte[]>> handlers = HashBasedTable.create();
+    private Table<String, String, BiConsumer<R, Message>> handlers = HashBasedTable.create();
 
     public Connector(P plugin, boolean requiresPlayer) {
         this.plugin = plugin;
@@ -76,8 +77,8 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
                 break;
         }
 
-        // If message group is empty then this should reach all
-        if (!message.getGroup().isEmpty()) {
+        // If message group is empty then this should reach all, also targeting specific servers/proxies is always allowed
+        if (!message.getGroup().isEmpty() && message.getTarget() != MessageTarget.SERVER && message.getTarget() != MessageTarget.PROXY) {
             // Check group
             String group = plugin.getGroup(message.getSendingPlugin());
             if (!group.isEmpty() && !group.equals(message.getGroup())) {
@@ -86,9 +87,9 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
             }
         }
 
-        BiConsumer<R, byte[]> handler = handlers.get(message.getSendingPlugin().toLowerCase(Locale.ROOT), message.getAction());
+        BiConsumer<R, Message> handler = handlers.get(message.getSendingPlugin().toLowerCase(Locale.ROOT), message.getAction());
         if (handler != null) {
-            handler.accept(receiver, message.getData());
+            handler.accept(receiver, message);
         } else {
             plugin.logDebug("Plugin '" + message.getSendingPlugin() + " did not register an action '" + message.getAction() + "' but we received data with target '" + message.getTarget() + "' by " + receiver);
         }
@@ -174,8 +175,56 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
      * @param action    The action to register (case sensitive)
      * @param handler   A BiConsumer which takes the receiving player and the data
      * @return The previously registered handler if there was one
+     * @deprecated Since 1.5. Use {@link #registerMessageHandler(ConnectingPlugin, String, BiConsumer)}
      */
+    @Deprecated
     public BiConsumer<R, byte[]> registerHandler(ConnectingPlugin plugin, String action, BiConsumer<R, byte[]> handler) {
+        return transformHandler(registerMessageHandler(plugin, action, (r, message) -> handler.accept(r, message.getData())));
+    }
+
+    /**
+     * Unregister a handler from a certain action
+     * @param plugin    The plugin to unregister the handler of
+     * @param action    The action to unregister (case sensitive)
+     * @return The previously registered handler if there was one or null
+     * @deprecated Since 1.5. Use {@link #unregisterMessageHandler(ConnectingPlugin, String)}
+     */
+    @Deprecated
+    public BiConsumer<R, byte[]> unregisterHandler(ConnectingPlugin plugin, String action) {
+        return transformHandler(unregisterMessageHandler(plugin, action));
+    }
+
+    /**
+     * Unregister a all handlers of a certain plugin
+     * @param plugin    The plugin to unregister the handlers of
+     * @return The previously registered handlers if there were some or null
+     * @deprecated Since 1.5. Use {@link #unregisterMessageHandlers(ConnectingPlugin)}
+     */
+    @Deprecated
+    public Map<String, BiConsumer<R, byte[]>> unregisterHandlers(ConnectingPlugin plugin) {
+        return unregisterMessageHandlers(plugin).entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> transformHandler(e.getValue())));
+    }
+
+    /**
+     * Utility method to transform to deprecated byte[] BiConsumer
+     */
+    private BiConsumer<R, byte[]> transformHandler(BiConsumer<R, Message> handler) {
+        if (handler != null) {
+            return (r, data) -> handler.accept(r, new Message(null, null, null, null, null, data));
+        }
+        return null;
+    }
+
+    /**
+     * Register a handler for a certain message
+     * @param plugin    The plugin to register the handler for
+     * @param action    The action to register (case sensitive)
+     * @param handler   A BiConsumer which takes the receiving player and the Message
+     * @return The previously registered handler if there was one
+     * @since 1.5
+     */
+    public BiConsumer<R, Message> registerMessageHandler(ConnectingPlugin plugin, String action, BiConsumer<R, Message> handler) {
         return handlers.put(plugin.getName().toLowerCase(Locale.ROOT), action, handler);
     }
 
@@ -184,8 +233,9 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
      * @param plugin    The plugin to unregister the handler of
      * @param action    The action to unregister (case sensitive)
      * @return The previously registered handler if there was one or null
+     * @since 1.5
      */
-    public BiConsumer<R, byte[]> unregisterHandler(ConnectingPlugin plugin, String action) {
+    public BiConsumer<R, Message> unregisterMessageHandler(ConnectingPlugin plugin, String action) {
         return handlers.remove(plugin.getName().toLowerCase(Locale.ROOT), action);
     }
 
@@ -193,8 +243,9 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
      * Unregister a all handlers of a certain plugin
      * @param plugin    The plugin to unregister the handlers of
      * @return The previously registered handlers if there were some or null
+     * @since 1.5
      */
-    public Map<String, BiConsumer<R, byte[]>> unregisterHandlers(ConnectingPlugin plugin) {
+    public Map<String, BiConsumer<R, Message>> unregisterMessageHandlers(ConnectingPlugin plugin) {
         return handlers.rowMap().remove(plugin.getName().toLowerCase(Locale.ROOT));
     }
 

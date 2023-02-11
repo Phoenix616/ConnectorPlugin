@@ -23,6 +23,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import de.themoep.connectorplugin.connector.Message;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import de.themoep.connectorplugin.connector.VersionMismatchException;
 
@@ -56,10 +57,10 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
      * @param handler   A BiConsumer which takes the receiving player and the data
      * @return The previously registered handler if there was one
      */
-    protected BiConsumer<R, byte[]> registerHandler(String action, BiConsumer<R, byte[]> handler) {
-        return plugin.getConnector().registerHandler(plugin, action, (r, data) -> {
+    protected BiConsumer<R, Message> registerHandler(String action, BiConsumer<R, byte[]> handler) {
+        return plugin.getConnector().registerMessageHandler(plugin, action, (r, m) -> {
             try {
-                BridgeMessage message = BridgeMessage.fromByteArray(data);
+                BridgeMessage message = BridgeMessage.fromByteArray(m.getData());
                 handler.accept((R) r, message.getData());
             } catch (VersionMismatchException e) {
                 plugin.logError(e.getMessage() + " Ignoring message!");
