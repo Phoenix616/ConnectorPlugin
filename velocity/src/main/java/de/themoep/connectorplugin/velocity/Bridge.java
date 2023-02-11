@@ -112,40 +112,6 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
             }
         });
 
-        registerHandler(Action.TELEPORT, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
-            long id = in.readLong();
-            String playerName = in.readUTF();
-            LocationInfo targetLocation = LocationInfo.read(in);
-
-            teleport(playerName, targetLocation, messages -> sendResponseMessage(senderServer, id, messages))
-                    .thenAccept(success -> sendResponse(senderServer, id, success));
-        });
-
-        registerHandler(Action.TELEPORT_TO_WORLD, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
-            long id = in.readLong();
-            String playerName = in.readUTF();
-            String targetServer = in.readUTF();
-            String targetWorld = in.readUTF();
-
-            teleport(playerName, targetServer, targetWorld, messages -> sendResponseMessage(senderServer, id, messages))
-                    .thenAccept(success -> sendResponse(senderServer, id, success));
-        });
-
-        registerHandler(Action.TELEPORT_TO_PLAYER, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
-            long id = in.readLong();
-            String playerName = in.readUTF();
-            String targetName = in.readUTF();
-
-            teleport(playerName, targetName, messages -> sendResponseMessage(senderServer, id, messages))
-                    .thenAccept(success -> sendResponse(senderServer, id, success));
-        });
-
         registerHandler(Action.GET_SERVER, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
@@ -256,27 +222,6 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
                 }
             } catch (Throwable ex) {
                 plugin.logError("Unhandled exception executing bridged command '" + commandLabel + "' from plugin " + command.getPlugin().getName(), ex);
-            }
-        });
-
-        registerHandler(Action.RESPONSE, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String serverName = in.readUTF();
-            if (!serverName.equals(plugin.getServerName())) {
-                return;
-            }
-            long id = in.readLong();
-            boolean isCompletion = in.readBoolean();
-            if (isCompletion) {
-                handleResponse(id, in);
-            } else {
-                String message = in.readUTF();
-                Consumer<String>[] consumer = consumers.getIfPresent(id);
-                if (consumer != null) {
-                    for (Consumer<String> stringConsumer : consumer) {
-                        stringConsumer.accept(message);
-                    }
-                }
             }
         });
     }

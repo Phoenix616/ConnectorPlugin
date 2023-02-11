@@ -18,6 +18,7 @@ package de.themoep.connectorplugin;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.themoep.connectorplugin.connector.MessageTarget;
@@ -31,6 +32,61 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
 
     public ProxyBridgeCommon(P plugin) {
         super(plugin);
+
+        registerHandler(Action.TELEPORT, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+            LocationInfo targetLocation = LocationInfo.read(in);
+
+            teleport(playerName, targetLocation, messages -> sendResponseMessage(senderServer, id, messages))
+                    .thenAccept(success -> sendResponse(senderServer, id, success));
+        });
+
+        registerHandler(Action.TELEPORT_TO_WORLD, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+            String targetServer = in.readUTF();
+            String targetWorld = in.readUTF();
+
+            teleport(playerName, targetServer, targetWorld, messages -> sendResponseMessage(senderServer, id, messages))
+                    .thenAccept(success -> sendResponse(senderServer, id, success));
+        });
+
+        registerHandler(Action.TELEPORT_TO_PLAYER, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+            String targetName = in.readUTF();
+
+            teleport(playerName, targetName, messages -> sendResponseMessage(senderServer, id, messages))
+                    .thenAccept(success -> sendResponse(senderServer, id, success));
+        });
+
+        registerHandler(Action.RESPONSE, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String serverName = in.readUTF();
+            if (!serverName.equals(plugin.getServerName())) {
+                return;
+            }
+            long id = in.readLong();
+            boolean isCompletion = in.readBoolean();
+            if (isCompletion) {
+                handleResponse(id, in);
+            } else {
+                String message = in.readUTF();
+                Consumer<String>[] consumer = consumers.getIfPresent(id);
+                if (consumer != null) {
+                    for (Consumer<String> stringConsumer : consumer) {
+                        stringConsumer.accept(message);
+                    }
+                }
+            }
+        });
     }
 
     @Override
