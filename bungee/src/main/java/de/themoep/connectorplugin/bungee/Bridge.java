@@ -45,6 +45,7 @@ import net.md_5.bungee.event.EventHandler;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -60,18 +61,9 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
 
         plugin.getProxy().getPluginManager().registerListener(plugin, this);
 
-        registerHandler(Action.STARTED, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
-
-            for (BridgedCommand<?, CommandSender> command : commands.values()) {
-                registerServerCommand(senderServer, command);
-            }
-        });
-
-        registerHandler(Action.SEND_TO_SERVER, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.SEND_TO_SERVER, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
             String targetServer = in.readUTF();
@@ -105,23 +97,9 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
             }
         });
 
-        registerHandler(Action.GET_SERVER, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
-            long id = in.readLong();
-            String playerName = in.readUTF();
-
-            ProxiedPlayer player = plugin.getProxy().getPlayer(playerName);
-            if (player != null && player.getServer() != null) {
-                sendResponse(senderServer, id, player.getServer().getInfo().getName());
-            } else {
-                sendResponse(senderServer, id, "");
-            }
-        });
-
-        registerHandler(Action.GET_LOCATION, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.GET_LOCATION, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
 
@@ -133,9 +111,9 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
             }
         });
 
-        registerHandler(Action.PLAYER_COMMAND, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String serverName = in.readUTF();
+        registerMessageHandler(Action.PLAYER_COMMAND, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
             UUID playerId = new UUID(in.readLong(), in.readLong());
@@ -147,19 +125,19 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
             }
             if (player == null) {
                 plugin.logDebug("Could not find player " + playerName + "/" + playerId + " on this proxy to execute command " + command);
-                sendResponse(serverName, id, false, "Could not find player " + playerName + "/" + playerId + " on this proxy to execute command " + command);
+                sendResponse(senderServer, id, false, "Could not find player " + playerName + "/" + playerId + " on this proxy to execute command " + command);
                 return;
             }
 
-            plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + serverName);
+            plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + senderServer);
             boolean success = plugin.getProxy().getPluginManager().dispatchCommand(player, command);
 
             sendResponse(player, id, success);
         });
 
-        registerHandler(Action.CONSOLE_COMMAND, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.CONSOLE_COMMAND, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String command = in.readUTF();
 
@@ -340,39 +318,43 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
             return future;
         }
 
-        ProxiedPlayer target = plugin.getProxy().getPlayer(targetName);
-        if (target == null) {
-            plugin.logDebug("Could not find target player " + targetName + " on this proxy to teleport " + player.getName() + " to");
-            future.complete(false);
-            for (Consumer<String> c : consumer) {
-                c.accept("Could not find target player " + targetName + " on this proxy to teleport " + player.getName() + " to");
+        getServer(targetName).thenAccept(serverName -> {
+            if (serverName == null || serverName.isEmpty()) {
+                // Player is not online or not connected to server
+                plugin.logDebug("Target player " + targetName + " is either not online or not connected to a server. (Tried to teleport " + player.getName() + " to them)");
+                future.complete(false);
+                for (Consumer<String> c : consumer) {
+                    c.accept("Could not find target player " + targetName + " to teleport " + player.getName() + " to");
+                }
+                return;
             }
-            return future;
-        }
 
-        if (target.getServer() == null) {
-            plugin.logDebug(target.getName() + " is not currently connected to any server.");
-            future.complete(false);
-            for (Consumer<String> c : consumer) {
-                c.accept(target.getName() + " is not currently connected to any server.");
+            ServerInfo server = plugin.getProxy().getServerInfo(serverName);
+            if (server == null) {
+                // Player is online but their server doesn't exist on this proxy
+                plugin.logDebug("Target player " + targetName + " is online on server " + serverName + " which does not exist on this proxy! (Tried to teleport " + player.getName() + " to them)");
+                future.complete(false);
+                for (Consumer<String> c : consumer) {
+                    c.accept("Could not find server " + serverName + " of target player " + targetName + " on " + player.getName() + "'s proxy to teleport them");
+                }
+                return;
             }
-            return future;
-        }
 
-        markTeleporting(playerName);
-        future.thenAccept(success -> unmarkTeleporting(playerName));
+            markTeleporting(playerName);
+            future.thenAccept(success -> unmarkTeleporting(playerName));
 
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
-        out.writeLong(id);
-        out.writeUTF(player.getName());
-        out.writeUTF(target.getName());
-        responses.put(id, new ResponseHandler.Boolean(future));
-        consumers.put(id, consumer);
-        sendData(Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_QUEUE, out.toByteArray());
+            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+            long id = RANDOM.nextLong();
+            out.writeUTF(plugin.getServerName());
+            out.writeLong(id);
+            out.writeUTF(player.getName());
+            out.writeUTF(targetName);
+            responses.put(id, new ResponseHandler.Boolean(future));
+            consumers.put(id, consumer);
+            sendData(Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_QUEUE, out.toByteArray());
 
-        sendToServerIfNecessary(player, target.getServer().getInfo(), future, consumer);
+            sendToServerIfNecessary(player, server, future, consumer);
+        });
 
         return future;
     }
@@ -447,6 +429,13 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
         sendData(Action.REGISTER_COMMAND, MessageTarget.SERVER, server, out.toByteArray());
     }
 
+    @Override
+    protected void registerServerCommands(String server) {
+        for (BridgedCommand<?, CommandSender> command : commands.values()) {
+            registerServerCommand(server, command);
+        }
+    }
+
     /**
      * Register a command on all servers
      * @param command   The command to register
@@ -510,17 +499,24 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
         }
     }
 
-    @EventHandler(priority = (byte) 128)
+    @EventHandler(priority = (byte) 128) // Monitor priority
     public void onPlayerJoin(ServerConnectEvent event) {
         // check if it's a fresh proxy join
         if (event.getPlayer().getServer() == null) {
             unmarkTeleporting(event.getPlayer().getName());
         }
+        if (!event.isCancelled()) {
+            onPlayerJoin(new PlayerInfo(
+                    event.getPlayer().getUniqueId(),
+                    event.getPlayer().getName(),
+                    event.getTarget().getName()
+            ));
+        }
     }
 
-    @EventHandler(priority = (byte) 128)
+    @EventHandler(priority = (byte) 128) // Monitor priority
     public void onPlayerQuit(PlayerDisconnectEvent event) {
-        unmarkTeleporting(event.getPlayer().getName());
+        onPlayerLeave(event.getPlayer().getName());
     }
 
     private class BridgedSender implements CommandSender {

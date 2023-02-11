@@ -27,10 +27,13 @@ import de.themoep.connectorplugin.connector.Message;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import de.themoep.connectorplugin.connector.VersionMismatchException;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -42,6 +45,7 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
     private static final int VERSION = 2;
     protected final P plugin;
 
+    protected final Map<String, PlayerInfo> playerInfoMap = new HashMap<>();
     protected final Cache<Long, ResponseHandler<?>> responses = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
     protected final Cache<Long, Consumer<String>[]> consumers = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build();
     private final Set<String> isTeleporting = new HashSet<>();
@@ -50,6 +54,16 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
 
     public BridgeCommon(P plugin) {
         this.plugin = plugin;
+
+        registerHandler(Action.PLAYER_JOIN, (r, data) -> {
+            PlayerInfo playerInfo = PlayerInfo.read(ByteStreams.newDataInput(data));
+            addPlayerInfo(playerInfo);
+        });
+
+        registerHandler(Action.PLAYER_LEAVE, (r, data) -> {
+            String playerName = ByteStreams.newDataInput(data).readUTF();
+            removePlayerInfo(playerName);
+        });
     }
 
     /**
@@ -220,15 +234,11 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
      * @return A future for when the server was queried
      */
     public CompletableFuture<String> getServer(String player) {
-        CompletableFuture<String> future = new CompletableFuture<>();
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
-        out.writeLong(id);
-        out.writeUTF(player);
-        responses.put(id, new ResponseHandler.String(future));
-        sendData(Action.GET_SERVER, MessageTarget.ALL_PROXIES, PLAYER_PREFIX + player, out.toByteArray());
-        return future;
+        PlayerInfo playerInfo = getPlayerInfo(player);
+        if (playerInfo != null) {
+            return CompletableFuture.completedFuture(playerInfo.getServer());
+        }
+        return CompletableFuture.completedFuture(null);
     }
 
     /**
@@ -330,8 +340,12 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         public byte[] writeToByteArray() {
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
             out.writeInt(VERSION);
-            out.writeInt(data.length);
-            out.write(data);
+            if (data != null) {
+                out.writeInt(data.length);
+                out.write(data);
+            } else {
+                out.writeInt(0);
+            }
             return out.toByteArray();
         }
 
@@ -396,15 +410,68 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         return isTeleporting.remove(playerName.toLowerCase(Locale.ROOT));
     }
 
+    protected static class PlayerInfo {
+        private final UUID uuid;
+        private final String name;
+        private final String server;
+
+        public PlayerInfo(UUID uuid, String name, String server) {
+            this.uuid = uuid;
+            this.name = name;
+            this.server = server;
+        }
+
+        public UUID getUuid() {
+            return uuid;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getServer() {
+            return server;
+        }
+
+        public void write(ByteArrayDataOutput out) {
+            out.writeLong(uuid.getMostSignificantBits());
+            out.writeLong(uuid.getLeastSignificantBits());
+            out.writeUTF(name);
+            out.writeUTF(server);
+        }
+
+        public static PlayerInfo read(ByteArrayDataInput in) {
+            return new PlayerInfo(
+                    new UUID(in.readLong(), in.readLong()),
+                    in.readUTF(),
+                    in.readUTF()
+            );
+        }
+    }
+
+    protected void addPlayerInfo(PlayerInfo playerInfo) {
+        playerInfoMap.put(playerInfo.getName().toLowerCase(Locale.ROOT), playerInfo);
+    }
+
+    protected void removePlayerInfo(String player) {
+        playerInfoMap.remove(player.toLowerCase(Locale.ROOT));
+    }
+
+    private PlayerInfo getPlayerInfo(String player) {
+        return playerInfoMap.get(player.toLowerCase(Locale.ROOT));
+    }
+
     public static class Action {
         public static final String STARTED = "started";
+        public static final String SHUTDOWN = "shutdown";
         public static final String SEND_TO_SERVER = "send_to_server";
         public static final String TELEPORT = "teleport";
         public static final String TELEPORT_TO_WORLD = "teleport_to_world";
         public static final String TELEPORT_TO_PLAYER = "teleport_to_player";
         public static final String GET_LOCATION = "get_location";
-        public static final String GET_SERVER = "get_server";
         public static final String PLAYER_COMMAND = "player_command";
+        public static final String PLAYER_JOIN = "player_join";
+        public static final String PLAYER_LEAVE = "player_leave";
         public static final String CONSOLE_COMMAND = "console_command";
         public static final String RESPONSE = "response";
         public static final String REGISTER_COMMAND = "register_command";

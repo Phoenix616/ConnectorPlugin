@@ -497,7 +497,6 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(playerName);
         out.writeUTF(serverName);
@@ -519,7 +518,6 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(playerName);
         out.writeUTF(targetName);
@@ -558,7 +556,6 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(player.getName());
         out.writeLong(player.getUniqueId().getMostSignificantBits());
@@ -579,7 +576,6 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(command);
         responses.put(id, new ResponseHandler.Boolean(future));

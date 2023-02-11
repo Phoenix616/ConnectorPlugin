@@ -10,7 +10,7 @@ This includes a bridging utility and some basic commands to use the provided uti
 - [x] Server-side command registration from proxy
 - [x] Location querying
 - [ ] Server state querying
-- [x] Teleporting
+- [x] Teleporting (Including multi-proxy player to player teleportation)
 - [ ] Proxy-side Vault/Tresor integration
 
 ## Communication Methods

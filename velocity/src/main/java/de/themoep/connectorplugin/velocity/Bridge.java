@@ -69,15 +69,6 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
 
         plugin.getProxy().getEventManager().register(plugin, this);
 
-        registerHandler(Action.STARTED, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
-
-            for (BridgedCommand<?, CommandSource> command : commands.values()) {
-                registerServerCommand(senderServer, command);
-            }
-        });
-
         registerHandler(Action.SEND_TO_SERVER, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
@@ -112,23 +103,9 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
             }
         });
 
-        registerHandler(Action.GET_SERVER, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
-            long id = in.readLong();
-            String playerName = in.readUTF();
-
-            Optional<Player> player = plugin.getProxy().getPlayer(playerName);
-            if (player.isPresent() && player.get().getCurrentServer().isPresent()) {
-                sendResponse(senderServer, id, player.get().getCurrentServer().get().getServerInfo().getName());
-            } else {
-                sendResponse(senderServer, id, "");
-            }
-        });
-
-        registerHandler(Action.GET_LOCATION, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.GET_LOCATION, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
 
@@ -140,9 +117,9 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
             }
         });
 
-        registerHandler(Action.PLAYER_COMMAND, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String serverName = in.readUTF();
+        registerMessageHandler(Action.PLAYER_COMMAND, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
             UUID playerId = new UUID(in.readLong(), in.readLong());
@@ -152,19 +129,19 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
                     .orElseGet(() -> plugin.getProxy().getPlayer(playerName).orElse(null));
             if (player == null) {
                 plugin.logDebug("Could not find player " + playerName + "/" + playerId + " on this proxy to execute command " + command);
-                sendResponse(serverName, id, false, "Could not find player " + playerName + "/" + playerId + " on this proxy to execute command " + command);
+                sendResponse(senderServer, id, false, "Could not find player " + playerName + "/" + playerId + " on this proxy to execute command " + command);
                 return;
             }
 
-            plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + serverName);
+            plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + senderServer);
             Player finalPlayer = player;
             plugin.getProxy().getCommandManager().executeAsync(finalPlayer, command)
                     .thenAccept(success -> sendResponse(finalPlayer, id, success));
         });
 
-        registerHandler(Action.CONSOLE_COMMAND, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.CONSOLE_COMMAND, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String command = in.readUTF();
 
@@ -344,39 +321,43 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
             return future;
         }
 
-        Player target = plugin.getProxy().getPlayer(targetName).orElse(null);
-        if (target == null) {
-            plugin.logDebug("Could not find target player " + targetName + " on this proxy to teleport " + player.getUsername() + " to");
-            future.complete(false);
-            for (Consumer<String> c : consumer) {
-                c.accept("Could not find target player " + targetName + " on this proxy to teleport " + player.getUsername() + " to");
+        getServer(targetName).thenAccept(serverName -> {
+            if (serverName == null || serverName.isEmpty()) {
+                // Player is not online or not connected to server
+                plugin.logDebug("Target player " + targetName + " is either not online or not connected to a server. (Tried to teleport " + player.getUsername() + " to them)");
+                future.complete(false);
+                for (Consumer<String> c : consumer) {
+                    c.accept("Could not find target player " + targetName + " to teleport " + player.getUsername() + " to");
+                }
+                return;
             }
-            return future;
-        }
 
-        if (!target.getCurrentServer().isPresent()) {
-            plugin.logDebug(target.getUsername() + " is not currently connected to any server.");
-            future.complete(false);
-            for (Consumer<String> c : consumer) {
-                c.accept(target.getUsername() + " is not currently connected to any server.");
+            Optional<RegisteredServer> server = plugin.getProxy().getServer(serverName);
+            if (!server.isPresent()) {
+                // Player is online but their server doesn't exist on this proxy
+                plugin.logDebug("Target player " + targetName + " is online on server " + serverName + " which does not exist on this proxy! (Tried to teleport " + player.getUsername() + " to them)");
+                future.complete(false);
+                for (Consumer<String> c : consumer) {
+                    c.accept("Could not find server " + serverName + " of target player " + targetName + " on " + player.getUsername() + "'s proxy to teleport them");
+                }
+                return;
             }
-            return future;
-        }
 
-        markTeleporting(playerName);
-        future.thenAccept(success -> unmarkTeleporting(playerName));
+            markTeleporting(playerName);
+            future.thenAccept(success -> unmarkTeleporting(playerName));
 
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
-        out.writeLong(id);
-        out.writeUTF(player.getUsername());
-        out.writeUTF(target.getUsername());
-        responses.put(id, new ResponseHandler.Boolean(future));
-        consumers.put(id, consumer);
-        sendData(Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_QUEUE, out.toByteArray());
+            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+            long id = RANDOM.nextLong();
+            out.writeUTF(plugin.getServerName());
+            out.writeLong(id);
+            out.writeUTF(player.getUsername());
+            out.writeUTF(targetName);
+            responses.put(id, new ResponseHandler.Boolean(future));
+            consumers.put(id, consumer);
+            sendData(Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_QUEUE, out.toByteArray());
 
-        sendToServerIfNecessary(player, target.getCurrentServer().get().getServer(), future, consumer);
+            sendToServerIfNecessary(player, server.get(), future, consumer);
+        });
 
         return future;
     }
@@ -440,6 +421,13 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
         return future;
     }
 
+    @Override
+    protected void registerServerCommands(String server) {
+        for (BridgedCommand<?, CommandSource> command : commands.values()) {
+            registerServerCommand(server, command);
+        }
+    }
+
     /**
      * Register a command on a server
      * @param server    The server
@@ -494,11 +482,18 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
         if (!event.getPlayer().getCurrentServer().isPresent()) {
             unmarkTeleporting(event.getPlayer().getUsername());
         }
+        if (event.getResult().getServer().isPresent()) {
+            onPlayerJoin(new PlayerInfo(
+                    event.getPlayer().getUniqueId(),
+                    event.getPlayer().getUsername(),
+                    event.getResult().getServer().get().getServerInfo().getName()
+            ));
+        }
     }
 
     @Subscribe(order = PostOrder.LAST)
     public void onPlayerQuit(DisconnectEvent event) {
-        unmarkTeleporting(event.getPlayer().getUsername());
+        onPlayerLeave(event.getPlayer().getUsername());
     }
 
     private class ForwardingCommand implements SimpleCommand, CommandMeta {

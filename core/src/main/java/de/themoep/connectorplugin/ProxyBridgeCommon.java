@@ -33,6 +33,9 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
     public ProxyBridgeCommon(P plugin) {
         super(plugin);
 
+        registerMessageHandler(Action.STARTED, (receiver, message)
+                -> registerServerCommands(message.getReceivedMessage().getSendingServer()));
+
         registerHandler(Action.TELEPORT, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             String senderServer = in.readUTF();
@@ -114,4 +117,30 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
         sendData(Action.CONSOLE_COMMAND, MessageTarget.OTHER_PROXIES, out.toByteArray());
         return future;
     }
+
+    protected void onPlayerJoin(PlayerInfo playerInfo) {
+        addPlayerInfo(playerInfo);
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        playerInfo.write(out);
+        byte[] data = out.toByteArray();
+        sendData(Action.PLAYER_JOIN, MessageTarget.OTHER_PROXIES, data);
+        sendData(Action.PLAYER_JOIN, MessageTarget.ALL_QUEUE, data);
+    }
+
+    protected void onPlayerLeave(String player) {
+        unmarkTeleporting(player);
+
+        removePlayerInfo(player);
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(player);
+        byte[] data = out.toByteArray();
+        sendData(Action.PLAYER_LEAVE, MessageTarget.OTHER_PROXIES, data);
+        sendData(Action.PLAYER_LEAVE, MessageTarget.ALL_QUEUE, data);
+    }
+
+    /**
+     * Register all known commands on a server
+     * @param server The server
+     */
+    protected abstract void registerServerCommands(String server);
 }
