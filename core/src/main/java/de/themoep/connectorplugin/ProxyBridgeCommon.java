@@ -69,10 +69,6 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
 
         registerHandler(Action.RESPONSE, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String serverName = in.readUTF();
-            if (!serverName.equals(plugin.getServerName())) {
-                return;
-            }
             long id = in.readLong();
             boolean isCompletion = in.readBoolean();
             if (isCompletion) {

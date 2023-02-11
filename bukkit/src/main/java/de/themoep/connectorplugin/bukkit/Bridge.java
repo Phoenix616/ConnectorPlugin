@@ -292,10 +292,6 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
 
         registerHandler(Action.RESPONSE, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String serverName = in.readUTF();
-            if (!serverName.equals(plugin.getServerName())) {
-                return;
-            }
             long id = in.readLong();
             boolean isCompletion = in.readBoolean();
             if (isCompletion) {
@@ -384,7 +380,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
     protected void sendResponseData(String target, byte[] out) {
         sendData(
                 Action.RESPONSE,
-                target.startsWith(PROXY_ID_PREFIX) ? MessageTarget.PROXY : MessageTarget.OTHERS_QUEUE,
+                target.startsWith(PROXY_ID_PREFIX) ? MessageTarget.PROXY : MessageTarget.SERVER,
                 target,
                 out);
     }

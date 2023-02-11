@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 import static de.themoep.connectorplugin.connector.Connector.PLAYER_PREFIX;
 
 public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
+    private static final int VERSION = 2;
     protected final P plugin;
 
     protected final Cache<Long, ResponseHandler<?>> responses = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
@@ -52,16 +53,26 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
     }
 
     /**
-     * Register a bridge handler for a certain action
+     * Register a bridge data handler for a certain action
      * @param action    The action to register (case sensitive)
      * @param handler   A BiConsumer which takes the receiving player and the data
      * @return The previously registered handler if there was one
      */
     protected BiConsumer<R, Message> registerHandler(String action, BiConsumer<R, byte[]> handler) {
+        return registerMessageHandler(action, (r, m) -> handler.accept(r, m.getData()));
+    }
+
+    /**
+     * Register a bridge message handler for a certain action
+     * @param action    The action to register (case sensitive)
+     * @param handler   A BiConsumer which takes the receiving player and the message
+     * @return The previously registered handler if there was one
+     */
+    protected BiConsumer<R, Message> registerMessageHandler(String action, BiConsumer<R, BridgeMessage> handler) {
         return plugin.getConnector().registerMessageHandler(plugin, action, (r, m) -> {
             try {
-                BridgeMessage message = BridgeMessage.fromByteArray(m.getData());
-                handler.accept((R) r, message.getData());
+                BridgeMessage message = BridgeMessage.fromMessage(m);
+                handler.accept((R) r, message);
             } catch (VersionMismatchException e) {
                 plugin.logError(e.getMessage() + " Ignoring message!");
             }
@@ -254,7 +265,6 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
 
     protected void sendResponse(String target, long id, Object response, String... messages) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(target);
         out.writeLong(id);
         out.writeBoolean(true);
         if (response instanceof Boolean) {
@@ -275,7 +285,6 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
 
     protected void sendResponseMessage(String target, long id, String... messages) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(target);
         out.writeLong(id);
         out.writeBoolean(false);
         out.writeUTF(String.join("\n", messages));
@@ -303,10 +312,18 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
     }
 
     protected static class BridgeMessage {
-        private static final int VERSION = 1;
+        private final Message receivedMessage;
         private final byte[] data;
 
         public BridgeMessage(byte[] data) {
+            this(null, data);
+        }
+
+        /**
+         * @since 1.5
+         */
+        protected BridgeMessage(Message receivedMessage, byte[] data) {
+            this.receivedMessage = receivedMessage;
             this.data = data;
         }
 
@@ -318,6 +335,10 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
             return out.toByteArray();
         }
 
+        /**
+         * @deprecated Since 1.5. Use {@link #fromMessage(Message)}
+         */
+        @Deprecated
         public static BridgeMessage fromByteArray(byte[] messageData) throws VersionMismatchException {
             ByteArrayDataInput in = ByteStreams.newDataInput(messageData);
             int version = in.readInt();
@@ -329,7 +350,28 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
             int length = in.readInt();
             byte[] data = new byte[length];
             in.readFully(data);
-            return new BridgeMessage(data);
+            return new BridgeMessage(null, data);
+        }
+
+        /**
+         * @since 1.5
+         */
+        public static BridgeMessage fromMessage(Message message) throws VersionMismatchException {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            int version = in.readInt();
+            if (version < VERSION) {
+                throw new VersionMismatchException(version, VERSION, "Received bridge message from an outdated version! Please update the sending plugin!");
+            } else if (version > VERSION) {
+                throw new VersionMismatchException(version, VERSION, "Received bridge message with a newer version! Please update this plugin!");
+            }
+            int length = in.readInt();
+            byte[] data = new byte[length];
+            in.readFully(data);
+            return new BridgeMessage(message, data);
+        }
+
+        public Message getReceivedMessage() {
+            return receivedMessage;
         }
 
         public byte[] getData() {
