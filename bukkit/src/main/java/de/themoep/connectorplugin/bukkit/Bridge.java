@@ -85,9 +85,9 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
 
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
 
-        registerHandler(Action.TELEPORT, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.TELEPORT, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
             LocationInfo location = LocationInfo.read(in);
@@ -124,9 +124,9 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             }
         });
 
-        registerHandler(Action.TELEPORT_TO_WORLD, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.TELEPORT_TO_WORLD, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
             String serverName = in.readUTF();
@@ -166,9 +166,9 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             }
         });
 
-        registerHandler(Action.TELEPORT_TO_PLAYER, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.TELEPORT_TO_PLAYER, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
             String targetName = in.readUTF();
@@ -199,9 +199,9 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             }
         });
 
-        registerHandler(Action.GET_LOCATION, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.GET_LOCATION, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
 
@@ -213,9 +213,9 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             }
         });
 
-        registerHandler(Action.PLAYER_COMMAND, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.PLAYER_COMMAND, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
             UUID playerId = new UUID(in.readLong(), in.readLong());
@@ -246,9 +246,9 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             sendResponse(senderServer, id, success);
         });
 
-        registerHandler(Action.CONSOLE_COMMAND, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.CONSOLE_COMMAND, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             String targetServer = in.readUTF();
             if (targetServer.startsWith("p:")) {
                 Player player = plugin.getServer().getPlayer(targetServer.substring(2));
@@ -267,9 +267,9 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             sendResponse(senderServer, id, success);
         });
 
-        registerHandler(Action.REGISTER_COMMAND, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.REGISTER_COMMAND, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             String pluginName = in.readUTF();
             String name = in.readUTF();
 
@@ -417,7 +417,6 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(playerName);
         out.writeUTF(serverName);
@@ -452,7 +451,6 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(playerName);
         location.write(out);
@@ -631,11 +629,10 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         @Override
         public void sendMessage(String[] messages) {
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            out.writeUTF(serverName);
             out.writeLong(id);
             out.writeBoolean(false);
             out.writeUTF(String.join("\n", messages));
-            sendData(Action.RESPONSE, MessageTarget.OTHERS_QUEUE, out.toByteArray());
+            sendResponseData(serverName, out.toByteArray());
         }
 
         @Override

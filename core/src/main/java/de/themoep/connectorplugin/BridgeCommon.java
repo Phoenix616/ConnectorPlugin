@@ -162,7 +162,6 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeUTF(server);
         out.writeLong(id);
         out.writeUTF(command);
@@ -185,7 +184,6 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeUTF(proxy);
         out.writeLong(id);
         out.writeUTF(command);
@@ -213,7 +211,6 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         CompletableFuture<LocationInfo> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(player);
         responses.put(id, new ResponseHandler.Location(future));
@@ -463,7 +460,6 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
 
     public static class Action {
         public static final String STARTED = "started";
-        public static final String SHUTDOWN = "shutdown";
         public static final String SEND_TO_SERVER = "send_to_server";
         public static final String TELEPORT = "teleport";
         public static final String TELEPORT_TO_WORLD = "teleport_to_world";

@@ -69,9 +69,9 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
 
         plugin.getProxy().getEventManager().register(plugin, this);
 
-        registerHandler(Action.SEND_TO_SERVER, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.SEND_TO_SERVER, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
             String targetServer = in.readUTF();
@@ -241,7 +241,6 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(player.getUsername());
         location.write(out);
@@ -288,7 +287,6 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(player.getUsername());
         out.writeUTF(serverName);
@@ -348,7 +346,6 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
 
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
             long id = RANDOM.nextLong();
-            out.writeUTF(plugin.getServerName());
             out.writeLong(id);
             out.writeUTF(player.getUsername());
             out.writeUTF(targetName);
@@ -410,7 +407,6 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(player.getUsername());
         out.writeLong(player.getUniqueId().getMostSignificantBits());
@@ -435,8 +431,6 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
      */
     public void registerServerCommand(String server, BridgedCommand<?, CommandSource> command) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-
-        out.writeUTF(plugin.getServerName());
         write(out, command);
         sendData(Action.REGISTER_COMMAND, MessageTarget.SERVER, server, out.toByteArray());
     }
@@ -449,8 +443,6 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
         commands.put(command.getPlugin().getName().toLowerCase(Locale.ROOT), command.getName().toLowerCase(Locale.ROOT), command);
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-
-        out.writeUTF(plugin.getServerName());
         write(out, command);
         sendData(Action.REGISTER_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
 

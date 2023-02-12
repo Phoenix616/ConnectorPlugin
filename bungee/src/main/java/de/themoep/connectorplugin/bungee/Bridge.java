@@ -238,7 +238,6 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(player.getName());
         location.write(out);
@@ -285,7 +284,6 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(player.getName());
         out.writeUTF(serverName);
@@ -345,7 +343,6 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
 
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
             long id = RANDOM.nextLong();
-            out.writeUTF(plugin.getServerName());
             out.writeLong(id);
             out.writeUTF(player.getName());
             out.writeUTF(targetName);
@@ -405,7 +402,6 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(player.getName());
         out.writeLong(player.getUniqueId().getMostSignificantBits());
@@ -423,8 +419,6 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
      */
     public void registerServerCommand(String server, BridgedCommand<?, CommandSender> command) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-
-        out.writeUTF(plugin.getServerName());
         write(out, command);
         sendData(Action.REGISTER_COMMAND, MessageTarget.SERVER, server, out.toByteArray());
     }
@@ -444,8 +438,6 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
         commands.put(command.getPlugin().getName().toLowerCase(Locale.ROOT), command.getName().toLowerCase(Locale.ROOT), command);
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-
-        out.writeUTF(plugin.getServerName());
         write(out, command);
         sendData(Action.REGISTER_COMMAND, MessageTarget.ALL_QUEUE, out.toByteArray());
 

@@ -36,9 +36,9 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
         registerMessageHandler(Action.STARTED, (receiver, message)
                 -> registerServerCommands(message.getReceivedMessage().getSendingServer()));
 
-        registerHandler(Action.TELEPORT, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.TELEPORT, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
             LocationInfo targetLocation = LocationInfo.read(in);
@@ -47,9 +47,9 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
                     .thenAccept(success -> sendResponse(senderServer, id, success));
         });
 
-        registerHandler(Action.TELEPORT_TO_WORLD, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.TELEPORT_TO_WORLD, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
             String targetServer = in.readUTF();
@@ -59,9 +59,9 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
                     .thenAccept(success -> sendResponse(senderServer, id, success));
         });
 
-        registerHandler(Action.TELEPORT_TO_PLAYER, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            String senderServer = in.readUTF();
+        registerMessageHandler(Action.TELEPORT_TO_PLAYER, (receiver, message) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
+            String senderServer = message.getReceivedMessage().getSendingServer();
             long id = in.readLong();
             String playerName = in.readUTF();
             String targetName = in.readUTF();
@@ -107,7 +107,6 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         long id = RANDOM.nextLong();
-        out.writeUTF(plugin.getServerName());
         out.writeLong(id);
         out.writeUTF(command);
         responses.put(id, new ResponseHandler.Boolean(future));
