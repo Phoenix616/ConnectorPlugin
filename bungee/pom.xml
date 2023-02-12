@@ -18,10 +18,6 @@
             <id>sonatype-oss-repo</id>
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>
-        <repository>
-            <id>minebench-repo</id>
-            <url>https://repo.minebench.de</url>
-        </repository>
     </repositories>
 
     <dependencies>

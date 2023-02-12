@@ -53,7 +53,7 @@ public class ServerPlayerCommand extends SubCommand {
 
     @Override
     public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
-        if (!sender.hasPermission(getPermission())) {
+        if (!hasCommandPermission(sender)) {
             return Collections.emptySet();
         }
         if (args.length == 0) {

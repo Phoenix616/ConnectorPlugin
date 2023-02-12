@@ -71,7 +71,7 @@ public class TeleportToPlayerCommand extends SubCommand {
 
     @Override
     public List<String> onTabComplete(CommandSource sender, String[] args) {
-        if (!sender.hasPermission(getPermission())) {
+        if (!hasPermission(sender)) {
             return Collections.emptyList();
         }
         if (args.length == 0) {

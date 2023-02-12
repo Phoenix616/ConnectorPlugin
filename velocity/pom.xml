@@ -18,10 +18,6 @@
             <id>velocity-repo</id>
             <url>https://repo.velocitypowered.com/snapshots/</url>
         </repository>
-        <repository>
-            <id>minebench-repo</id>
-            <url>https://repo.minebench.de</url>
-        </repository>
     </repositories>
 
     <dependencies>

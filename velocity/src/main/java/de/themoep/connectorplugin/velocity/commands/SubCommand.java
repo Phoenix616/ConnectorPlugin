@@ -24,6 +24,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import de.themoep.connectorplugin.velocity.VelocityConnectorPlugin;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -76,6 +77,10 @@ public abstract class SubCommand implements CommandMeta, SimpleCommand {
 
     @Override
     public void execute(Invocation invocation) {
+        if (!hasPermission(invocation.source())) {
+            invocation.source().sendMessage(Component.text("No permission").color(NamedTextColor.RED));
+            return;
+        }
         if (!run(invocation.source(), invocation.alias(), invocation.arguments()) && getUsage() != null) {
             invocation.source().sendMessage(Component.text("Usage: /" + invocation.alias() + " " + getUsage()));
         }
@@ -99,24 +104,24 @@ public abstract class SubCommand implements CommandMeta, SimpleCommand {
     }
 
     public List<String> onTabComplete(CommandSource sender, String[] args) {
-        if (!sender.hasPermission(getPermission())) {
+        if (!hasPermission(sender)) {
             return Collections.emptyList();
         }
         if (args.length == 0 || args[0].isEmpty()) {
             return new ArrayList<>(subCommands.keySet());
         }
         SubCommand subCommand = getSubCommand(args[0]);
-        if (subCommand != null && sender.hasPermission(subCommand.getPermission())) {
+        if (subCommand != null && subCommand.hasPermission(sender)) {
             return subCommand.onTabComplete(sender, Arrays.copyOfRange(args, 1, args.length));
         }
         List<String> completions = new ArrayList<>();
         for (Map.Entry<String, SubCommand> e : subCommands.entrySet()) {
-            if (e.getKey().startsWith(args[0].toLowerCase(Locale.ROOT)) && sender.hasPermission(e.getValue().getPermission())) {
+            if (e.getKey().startsWith(args[0].toLowerCase(Locale.ROOT)) && e.getValue().hasPermission(sender)) {
                 completions.add(e.getKey());
             }
         }
         for (Map.Entry<String, SubCommand> e : subCommandAliases.entrySet()) {
-            if (e.getKey().startsWith(args[0].toLowerCase(Locale.ROOT)) && sender.hasPermission(e.getValue().getPermission())) {
+            if (e.getKey().startsWith(args[0].toLowerCase(Locale.ROOT)) && e.getValue().hasPermission(sender)) {
                 completions.add(e.getKey());
             }
         }
@@ -125,7 +130,11 @@ public abstract class SubCommand implements CommandMeta, SimpleCommand {
 
     @Override
     public boolean hasPermission(Invocation invocation) {
-        return getPermission() == null || invocation.source().hasPermission(getPermission());
+        return hasPermission(invocation.source());
+    }
+
+    public boolean hasPermission(CommandSource source) {
+        return getPermission() == null || getPermission().isEmpty() || source.hasPermission(getPermission());
     }
 
     public Map<String, SubCommand> getSubCommands() {

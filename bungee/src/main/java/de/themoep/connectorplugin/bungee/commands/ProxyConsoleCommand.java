@@ -18,10 +18,15 @@ package de.themoep.connectorplugin.bungee.commands;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import de.themoep.bungeeplugin.PluginCommand;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.plugin.Command;
 
 import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ProxyConsoleCommand extends SubCommand {
 
@@ -43,6 +48,22 @@ public class ProxyConsoleCommand extends SubCommand {
 
     @Override
     public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+        if (args.length == 0) {
+            return plugin.getProxy().getPluginManager().getCommands().stream()
+                    .map(Map.Entry::getValue)
+                    .filter(e -> e instanceof PluginCommand ? ((PluginCommand<?>) e).hasCommandPermission(sender) : e.hasPermission(sender))
+                    .map(Command::getName)
+                    .sorted(String::compareToIgnoreCase)
+                    .collect(Collectors.toList());
+        } else if (args.length == 1) {
+            return plugin.getProxy().getPluginManager().getCommands().stream()
+                    .map(Map.Entry::getValue)
+                    .filter(e -> e instanceof PluginCommand ? ((PluginCommand<?>) e).hasCommandPermission(sender) : e.hasPermission(sender))
+                    .map(Command::getName)
+                    .filter(s -> s.toLowerCase(Locale.ROOT).startsWith(args[0].toLowerCase(Locale.ROOT)))
+                    .sorted(String::compareToIgnoreCase)
+                    .collect(Collectors.toList());
+        }
         return Collections.emptySet();
     }
 }
