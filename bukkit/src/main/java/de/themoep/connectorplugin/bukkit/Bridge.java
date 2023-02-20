@@ -64,6 +64,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static de.themoep.connectorplugin.connector.Connector.PLAYER_PREFIX;
 import static de.themoep.connectorplugin.connector.Connector.PROXY_ID_PREFIX;
 
 public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implements Listener {
@@ -415,14 +416,24 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
      */
     public CompletableFuture<Boolean> sendToServer(String playerName, String serverName, Consumer<String>... consumer) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeLong(id);
-        out.writeUTF(playerName);
-        out.writeUTF(serverName);
-        responses.put(id, new ResponseHandler.Boolean(future));
-        consumers.put(id, consumer);
-        sendData(Action.SEND_TO_SERVER, MessageTarget.ALL_PROXIES, out.toByteArray());
+        getServer(playerName).whenComplete((s, e) -> {
+            // check player server existence
+            if (s == null) {
+                future.complete(false);
+                for (Consumer<String> c : consumer) {
+                    c.accept("Player " + playerName + " is not online!");
+                }
+                return;
+            }
+            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+            long id = RANDOM.nextLong();
+            out.writeLong(id);
+            out.writeUTF(playerName);
+            out.writeUTF(serverName);
+            responses.put(id, new ResponseHandler.Boolean(future));
+            consumers.put(id, consumer);
+            sendData(Action.SEND_TO_SERVER, MessageTarget.PROXY, PLAYER_PREFIX + playerName, out.toByteArray());
+        });
         return future;
     }
 
@@ -449,14 +460,24 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             }
         }
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeLong(id);
-        out.writeUTF(playerName);
-        location.write(out);
-        responses.put(id, new ResponseHandler.Boolean(future));
-        consumers.put(id, consumer);
-        sendData(Action.TELEPORT, MessageTarget.ALL_PROXIES, out.toByteArray());
+        getServer(playerName).whenComplete((s, e) -> {
+            // check player server existence
+            if (s == null) {
+                future.complete(false);
+                for (Consumer<String> c : consumer) {
+                    c.accept("Player " + playerName + " is not online!");
+                }
+                return;
+            }
+            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+            long id = RANDOM.nextLong();
+            out.writeLong(id);
+            out.writeUTF(playerName);
+            location.write(out);
+            responses.put(id, new ResponseHandler.Boolean(future));
+            consumers.put(id, consumer);
+            sendData(Action.TELEPORT, MessageTarget.PROXY, PLAYER_PREFIX + playerName, out.toByteArray());
+        });
         return future;
     }
 
@@ -492,16 +513,27 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
                 });
             }
         }
+
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeLong(id);
-        out.writeUTF(playerName);
-        out.writeUTF(serverName);
-        out.writeUTF(worldName);
-        responses.put(id, new ResponseHandler.Boolean(future));
-        consumers.put(id, consumer);
-        sendData(Action.TELEPORT_TO_WORLD, MessageTarget.ALL_PROXIES, out.toByteArray());
+        getServer(playerName).whenComplete((s, e) -> {
+            // check player server existence
+            if (s == null) {
+                future.complete(false);
+                for (Consumer<String> c : consumer) {
+                    c.accept("Player " + playerName + " is not online!");
+                }
+                return;
+            }
+            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+            long id = RANDOM.nextLong();
+            out.writeLong(id);
+            out.writeUTF(playerName);
+            out.writeUTF(serverName);
+            out.writeUTF(worldName);
+            responses.put(id, new ResponseHandler.Boolean(future));
+            consumers.put(id, consumer);
+            sendData(Action.TELEPORT_TO_WORLD, MessageTarget.PROXY, PLAYER_PREFIX + playerName, out.toByteArray());
+        });
         return future;
     }
 
@@ -512,16 +544,26 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
 
     @Override
     public CompletableFuture<Boolean> teleport(String playerName, String targetName, Consumer<String>... consumer) {
-        markTeleporting(playerName);
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeLong(id);
-        out.writeUTF(playerName);
-        out.writeUTF(targetName);
-        responses.put(id, new ResponseHandler.Boolean(future));
-        consumers.put(id, consumer);
-        sendData(Action.TELEPORT_TO_PLAYER, MessageTarget.ALL_PROXIES, out.toByteArray());
+        getServer(playerName).whenComplete((s, e) -> {
+            // check player server existence
+            if (s == null) {
+                future.complete(false);
+                for (Consumer<String> c : consumer) {
+                    c.accept("Player " + playerName + " is not online!");
+                }
+                return;
+            }
+            markTeleporting(playerName);
+            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+            long id = RANDOM.nextLong();
+            out.writeLong(id);
+            out.writeUTF(playerName);
+            out.writeUTF(targetName);
+            responses.put(id, new ResponseHandler.Boolean(future));
+            consumers.put(id, consumer);
+            sendData(Action.TELEPORT_TO_PLAYER, MessageTarget.PROXY, PLAYER_PREFIX + playerName, out.toByteArray());
+        });
         return future;
     }
 
@@ -552,15 +594,23 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
      */
     public CompletableFuture<Boolean> runProxyPlayerCommand(Player player, String command) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeLong(id);
-        out.writeUTF(player.getName());
-        out.writeLong(player.getUniqueId().getMostSignificantBits());
-        out.writeLong(player.getUniqueId().getLeastSignificantBits());
-        out.writeUTF(command);
-        responses.put(id, new ResponseHandler.Boolean(future));
-        sendData(Action.PLAYER_COMMAND, MessageTarget.PROXY, player, out.toByteArray());
+        // Make sure target player is connected
+        getServer(player).whenComplete((s, e) -> {
+            // check player server existence
+            if (s == null) {
+                future.complete(false);
+                return;
+            }
+            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+            long id = RANDOM.nextLong();
+            out.writeLong(id);
+            out.writeUTF(player.getName());
+            out.writeLong(player.getUniqueId().getMostSignificantBits());
+            out.writeLong(player.getUniqueId().getLeastSignificantBits());
+            out.writeUTF(command);
+            responses.put(id, new ResponseHandler.Boolean(future));
+            sendData(Action.PLAYER_COMMAND, MessageTarget.PROXY, player, out.toByteArray());
+        });
         return future;
     }
 
