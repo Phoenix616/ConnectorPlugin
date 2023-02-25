@@ -15,7 +15,7 @@ This includes a bridging utility and some basic commands to use the provided uti
 
 ## Communication Methods
 
-- [x] Plugin Messages
+- [x] Plugin Messages (limited functionality)
 - [ ] peer-to-peer
 - [x] redis pub sub
 - [x] MQTT (E.g. with RabbitMQ)

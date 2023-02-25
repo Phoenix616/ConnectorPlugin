@@ -122,7 +122,11 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         playerInfo.write(out);
         byte[] data = out.toByteArray();
-        sendData(Action.PLAYER_JOIN, MessageTarget.OTHER_PROXIES, data);
+        try {
+            sendData(Action.PLAYER_JOIN, MessageTarget.OTHER_PROXIES, data);
+        } catch (UnsupportedOperationException ignored) {
+            // Sending to other proxies is not supported when using plugin messages
+        }
         sendData(Action.PLAYER_JOIN, MessageTarget.ALL_QUEUE, data);
     }
 
@@ -133,7 +137,11 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(player);
         byte[] data = out.toByteArray();
-        sendData(Action.PLAYER_LEAVE, MessageTarget.OTHER_PROXIES, data);
+        try {
+            sendData(Action.PLAYER_LEAVE, MessageTarget.OTHER_PROXIES, data);
+        } catch (UnsupportedOperationException ignored) {
+            // Sending to other proxies is not supported when using plugin messages
+        }
         sendData(Action.PLAYER_LEAVE, MessageTarget.ALL_QUEUE, data);
     }
 

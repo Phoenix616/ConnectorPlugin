@@ -84,6 +84,10 @@ public final class VelocityConnectorPlugin implements ConnectorPlugin<Player> {
                 logger.warn("Messenger type '" + messengerType + "' is not supported, falling back to plugin messages!");
             case "plugin_messages":
                 connector = new PluginMessageConnector(this);
+                logger.warn("Using plugin messages as the messenger type will come with" +
+                        " some caveats like sending to servers without players or to" +
+                        " other proxies not working!");
+                logger.warn("Please consider using one of the other messenger types!");
                 break;
             case "redis":
                 connector = new RedisConnector(this);
