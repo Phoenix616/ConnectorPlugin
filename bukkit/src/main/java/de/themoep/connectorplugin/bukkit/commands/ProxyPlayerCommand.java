@@ -39,7 +39,7 @@ public class ProxyPlayerCommand extends SubCommand {
             return false;
         }
 
-        Player player = plugin.getServer().getPlayer(args[0]);
+        Player player = plugin.getServer().getPlayerExact(args[0]);
         if (player == null) {
             sender.sendMessage("No player with the name " + args[0] + " is online on this server!");
             return true;

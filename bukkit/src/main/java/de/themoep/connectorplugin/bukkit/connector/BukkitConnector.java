@@ -30,7 +30,7 @@ public abstract class BukkitConnector extends Connector<BukkitConnectorPlugin, P
     }
 
     protected Player getReceiverImplementation(String name) {
-        Player player = plugin.getServer().getPlayer(name);
+        Player player = plugin.getServer().getPlayerExact(name);
         if (player != null && player.isOnline()) {
             return player;
         }

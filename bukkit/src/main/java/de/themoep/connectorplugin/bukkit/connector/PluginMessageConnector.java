@@ -96,7 +96,7 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
 
         Player player = null;
         if (!targetData.startsWith("server:")) {
-            player = plugin.getServer().getPlayer(targetData);
+            player = plugin.getServer().getPlayerExact(targetData);
         }
         if (player != null) {
             player.sendPluginMessage(plugin, plugin.getMessageChannel(), dataToSend);

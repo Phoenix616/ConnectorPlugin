@@ -104,7 +104,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
 
             markTeleporting(playerName);
 
-            Player player = plugin.getServer().getPlayer(playerName);
+            Player player = plugin.getServer().getPlayerExact(playerName);
             if (player != null) {
                 plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to " + location);
                 PaperLib.teleportAsync(player, adapt(location)).whenComplete((success, ex) -> {
@@ -146,7 +146,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
 
             markTeleporting(playerName);
 
-            Player player = plugin.getServer().getPlayer(playerName);
+            Player player = plugin.getServer().getPlayerExact(playerName);
             if (player != null) {
                 plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to spawn of world " + worldName);
                 PaperLib.teleportAsync(player, world.getSpawnLocation()).whenComplete((success, ex) -> {
@@ -176,9 +176,9 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
 
             markTeleporting(playerName);
 
-            Player target = plugin.getServer().getPlayer(targetName);
+            Player target = plugin.getServer().getPlayerExact(targetName);
             if (target != null) {
-                Player player = plugin.getServer().getPlayer(playerName);
+                Player player = plugin.getServer().getPlayerExact(playerName);
                 if (player != null) {
                     plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to player " + targetName);
                     PaperLib.teleportAsync(player, target.getLocation()).whenComplete((success, ex) -> {
@@ -206,7 +206,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             long id = in.readLong();
             String playerName = in.readUTF();
 
-            Player player = plugin.getServer().getPlayer(playerName);
+            Player player = plugin.getServer().getPlayerExact(playerName);
             if (player != null) {
                 sendResponse(senderServer, id, adapt(player.getLocation()));
             } else {
@@ -224,7 +224,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
 
             Player player = plugin.getServer().getPlayer(playerId);
             if (player == null) {
-                player = plugin.getServer().getPlayer(playerName);
+                player = plugin.getServer().getPlayerExact(playerName);
             }
             if (player == null) {
                 plugin.logDebug("Could not find player " + playerName + "/" + playerId + " on this server to execute command " + command);
@@ -252,7 +252,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             String senderServer = message.getReceivedMessage().getSendingServer();
             String targetServer = in.readUTF();
             if (targetServer.startsWith("p:")) {
-                Player player = plugin.getServer().getPlayer(targetServer.substring(2));
+                Player player = plugin.getServer().getPlayerExact(targetServer.substring(2));
                 if (player == null) {
                     return;
                 }
@@ -323,7 +323,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
                 sendResponse(request.server, request.id, true, "Player login location changed");
                 plugin.logDebug("Set spawn location of player " + event.getPlayer().getName() + " to " + ((LocationTeleportRequest) request).location);
             } else if (request instanceof PlayerTeleportRequest) {
-                Player target = plugin.getServer().getPlayer(((PlayerTeleportRequest) request).targetName);
+                Player target = plugin.getServer().getPlayerExact(((PlayerTeleportRequest) request).targetName);
                 if (target == null) {
                     event.setSpawnLocation(plugin.getServer().getWorlds().get(0).getSpawnLocation());
                     sendResponse(request.server, request.id, false, "Target player " + ((PlayerTeleportRequest) request).targetName + " is no longer online?");
