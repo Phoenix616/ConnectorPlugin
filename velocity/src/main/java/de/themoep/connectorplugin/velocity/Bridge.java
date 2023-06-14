@@ -95,7 +95,7 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
 
                 player.createConnectionRequest(server).connect().thenAccept(result -> {
                     sendResponse(senderServer, id, result.isSuccessful());
-                    result.getReasonComponent().ifPresent(c -> sendResponseMessage(senderServer, id, LegacyComponentSerializer.legacyAmpersand().serialize(c)));
+                    result.getReasonComponent().ifPresent(c -> sendResponseMessage(senderServer, id, LegacyComponentSerializer.legacySection().serialize(c)));
                 });
             } else {
                 plugin.logDebug("Player '" + playerName + "' is already on server '" + targetServer + "'! Triggered from " + senderServer);
@@ -368,7 +368,7 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
                 if (!result.isSuccessful()) {
                     future.complete(false);
                     result.getReasonComponent().ifPresent(component -> {
-                        String reason = LegacyComponentSerializer.legacyAmpersand().serialize(component);
+                        String reason = LegacyComponentSerializer.legacySection().serialize(component);
                         for (Consumer<String> c : consumer) {
                             c.accept(reason);
                         }
