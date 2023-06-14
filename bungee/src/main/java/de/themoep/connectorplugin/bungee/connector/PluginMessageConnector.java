@@ -120,6 +120,7 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(message.getGroup());
+        out.writeUTF(targetData);
         out.writeInt(messageData.length);
         out.write(messageData);
         byte[] dataToSend = out.toByteArray();
