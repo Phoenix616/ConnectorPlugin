@@ -30,6 +30,8 @@ import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
+import com.velocitypowered.api.event.player.ServerConnectedEvent;
+import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
@@ -474,13 +476,17 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
         if (!event.getPlayer().getCurrentServer().isPresent()) {
             unmarkTeleporting(event.getPlayer().getUsername());
         }
-        if (event.getResult().getServer().isPresent()) {
+    }
+
+    @Subscribe(order = PostOrder.LAST)
+    public void onPlayerJoined(ServerPostConnectEvent event) {
+        event.getPlayer().getCurrentServer().ifPresent(server -> {
             onPlayerJoin(new PlayerInfo(
                     event.getPlayer().getUniqueId(),
                     event.getPlayer().getUsername(),
-                    event.getResult().getServer().get().getServerInfo().getName()
+                    server.getServerInfo().getName()
             ));
-        }
+        });
     }
 
     @Subscribe(order = PostOrder.LAST)

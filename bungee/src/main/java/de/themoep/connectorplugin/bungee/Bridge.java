@@ -36,6 +36,7 @@ import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;
 import net.md_5.bungee.api.event.ServerConnectEvent;
+import net.md_5.bungee.api.event.ServerSwitchEvent;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
@@ -45,7 +46,6 @@ import net.md_5.bungee.event.EventHandler;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -497,13 +497,15 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
         if (event.getPlayer().getServer() == null) {
             unmarkTeleporting(event.getPlayer().getName());
         }
-        if (!event.isCancelled()) {
-            onPlayerJoin(new PlayerInfo(
-                    event.getPlayer().getUniqueId(),
-                    event.getPlayer().getName(),
-                    event.getTarget().getName()
-            ));
-        }
+    }
+
+    @EventHandler(priority = (byte) 128) // Monitor priority
+    public void onPlayerJoined(ServerSwitchEvent event) {
+        onPlayerJoin(new PlayerInfo(
+                event.getPlayer().getUniqueId(),
+                event.getPlayer().getName(),
+                event.getPlayer().getServer().getInfo().getName()
+        ));
     }
 
     @EventHandler(priority = (byte) 128) // Monitor priority
