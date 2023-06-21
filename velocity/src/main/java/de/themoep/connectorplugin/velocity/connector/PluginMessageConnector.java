@@ -25,7 +25,7 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
-import com.velocitypowered.api.event.player.ServerConnectedEvent;
+import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
@@ -134,10 +134,12 @@ public class PluginMessageConnector extends VelocityConnector {
     }
 
     @Subscribe
-    public void onPlayerServerConnect(ServerConnectedEvent event) {
-        for (byte[] data : messageQueue.removeAll(event.getServer().getServerInfo().getName())) {
-            event.getServer().sendPluginMessage(messageChannel, data);
-        }
+    public void onPlayerServerConnected(ServerPostConnectEvent event) {
+        event.getPlayer().getCurrentServer().ifPresent(server -> {
+            for (byte[] data : messageQueue.removeAll(server.getServerInfo().getName())) {
+                server.sendPluginMessage(messageChannel, data);
+            }
+        });
     }
 
     @Override
