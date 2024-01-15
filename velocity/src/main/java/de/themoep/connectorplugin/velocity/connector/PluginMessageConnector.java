@@ -51,8 +51,8 @@ public class PluginMessageConnector extends VelocityConnector {
             return;
         }
 
+        event.setResult(PluginMessageEvent.ForwardResult.handled());
         if (event.getSource() instanceof Player) {
-            event.setResult(PluginMessageEvent.ForwardResult.handled());
             return;
         }
 

@@ -45,8 +45,8 @@ public class PluginMessageConnector extends BungeeConnector implements Listener 
             return;
         }
 
+        event.setCancelled(true);
         if (event.getSender() instanceof ProxiedPlayer) {
-            event.setCancelled(true);
             return;
         }
 
