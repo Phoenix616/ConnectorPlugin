@@ -30,7 +30,6 @@ import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
-import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.permission.Tristate;
@@ -532,6 +531,11 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
                 return ((CommandMeta) command).getHints();
             }
             return Collections.emptySet();
+        }
+
+        @Override
+        public Object getPlugin() {
+            return plugin;
         }
 
         @Override

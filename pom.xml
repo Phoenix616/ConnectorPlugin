@@ -7,7 +7,7 @@
 
     <groupId>de.themoep.connectorplugin</groupId>
     <artifactId>parent</artifactId>
-    <version>1.5-SNAPSHOT</version>
+    <version>1.5.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>${plugin.name}</name>
 
@@ -75,7 +75,7 @@
             <dependency>
                 <groupId>com.velocitypowered</groupId>
                 <artifactId>velocity-api</artifactId>
-                <version>3.0.1</version>
+                <version>3.3.0-SNAPSHOT</version>
                 <scope>provided</scope>
             </dependency>
         </dependencies>
