@@ -165,7 +165,7 @@ public class PluginConfig {
     }
 
     public String getString(String path) {
-        return getString(path);
+        return getRawConfig(path).getString();
     }
 
     public String getString(String path, String def) {
