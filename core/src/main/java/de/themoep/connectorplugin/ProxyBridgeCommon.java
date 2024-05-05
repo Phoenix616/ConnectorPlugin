@@ -70,6 +70,20 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
                     .thenAccept(success -> sendResponse(senderServer, id, success));
         });
 
+        registerHandler(Action.GET_PLAYER_INFO, (receiver, data) -> {
+            ByteArrayDataInput in = ByteStreams.newDataInput(data);
+            String senderServer = in.readUTF();
+            long id = in.readLong();
+            String playerName = in.readUTF();
+
+            R player = getPlayer(playerName);
+            if (player == null) {
+                sendResponseMessage(senderServer, id, "Player " + playerName + " not found!");
+            } else {
+                sendResponse(senderServer, id, createPlayerInfo(player));
+            }
+        });
+
         registerHandler(Action.RESPONSE, (receiver, data) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(data);
             long id = in.readLong();
@@ -150,4 +164,18 @@ public abstract class ProxyBridgeCommon<P extends ConnectorPlugin<R>, R> extends
      * @param server The server
      */
     protected abstract void registerServerCommands(String server);
+
+    /**
+     * Get a player by name
+     * @param playerName The name of the player
+     * @return The player
+     */
+    protected abstract R getPlayer(String playerName);
+
+    /**
+     * Create a player info object for a player
+     * @param player The player
+     * @return The player info object
+     */
+    public abstract PlayerInfo createPlayerInfo(R player);
 }

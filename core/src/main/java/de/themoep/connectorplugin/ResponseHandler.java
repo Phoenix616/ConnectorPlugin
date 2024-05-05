@@ -49,4 +49,10 @@ public abstract class ResponseHandler<T> {
             super(future);
         }
     }
+
+    public static class PlayerInfo extends ResponseHandler<BridgeCommon.PlayerInfo> {
+        public PlayerInfo(CompletableFuture<BridgeCommon.PlayerInfo> future) {
+            super(future);
+        }
+    }
 }

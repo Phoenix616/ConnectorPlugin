@@ -430,6 +430,16 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
         }
     }
 
+    @Override
+    protected ProxiedPlayer getPlayer(String playerName) {
+        return plugin.getProxy().getPlayer(playerName);
+    }
+
+    @Override
+    public PlayerInfo createPlayerInfo(ProxiedPlayer player) {
+        return new PlayerInfo(player.getUniqueId(), player.getName(), player.getServer().getInfo().getName());
+    }
+
     /**
      * Register a command on all servers
      * @param command   The command to register
@@ -501,11 +511,7 @@ public class Bridge extends ProxyBridgeCommon<BungeeConnectorPlugin, ProxiedPlay
 
     @EventHandler(priority = (byte) 128) // Monitor priority
     public void onPlayerJoined(ServerSwitchEvent event) {
-        onPlayerJoin(new PlayerInfo(
-                event.getPlayer().getUniqueId(),
-                event.getPlayer().getName(),
-                event.getPlayer().getServer().getInfo().getName()
-        ));
+        onPlayerJoin(createPlayerInfo(event.getPlayer()));
     }
 
     @EventHandler(priority = (byte) 128) // Monitor priority

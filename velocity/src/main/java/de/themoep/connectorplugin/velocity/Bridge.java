@@ -425,6 +425,16 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
         }
     }
 
+    @Override
+    protected Player getPlayer(String playerName) {
+        return plugin.getProxy().getPlayer(playerName).orElse(null);
+    }
+
+    @Override
+    public PlayerInfo createPlayerInfo(Player player) {
+        return new PlayerInfo(player.getUniqueId(), player.getUsername(), player.getCurrentServer().map(s -> s.getServerInfo().getName()).orElse(null));
+    }
+
     /**
      * Register a command on a server
      * @param server    The server
@@ -479,13 +489,7 @@ public class Bridge extends ProxyBridgeCommon<VelocityConnectorPlugin, Player> {
 
     @Subscribe(order = PostOrder.LAST)
     public void onPlayerJoined(ServerPostConnectEvent event) {
-        event.getPlayer().getCurrentServer().ifPresent(server -> {
-            onPlayerJoin(new PlayerInfo(
-                    event.getPlayer().getUniqueId(),
-                    event.getPlayer().getUsername(),
-                    server.getServerInfo().getName()
-            ));
-        });
+        onPlayerJoin(createPlayerInfo(event.getPlayer()));
     }
 
     @Subscribe(order = PostOrder.LAST)

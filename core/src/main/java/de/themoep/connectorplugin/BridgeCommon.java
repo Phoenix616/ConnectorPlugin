@@ -231,11 +231,9 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
      * @return A future for when the server was queried
      */
     public CompletableFuture<String> getServer(String player) {
-        PlayerInfo playerInfo = getPlayerInfo(player);
-        if (playerInfo != null) {
-            return CompletableFuture.completedFuture(playerInfo.getServer());
-        }
-        return CompletableFuture.completedFuture(null);
+        CompletableFuture<String> future = new CompletableFuture<>();
+        getPlayerInfo(player).thenAccept(p -> future.complete(p.getServer()));
+        return future;
     }
 
     /**
@@ -280,6 +278,8 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
             out.writeUTF((String) response);
         } else if (response instanceof LocationInfo) {
             ((LocationInfo) response).write(out);
+        } else if (response instanceof PlayerInfo) {
+            ((PlayerInfo) response).write(out);
         } else if (response == null) {
             out.writeUTF("");
         }
@@ -310,6 +310,8 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
                 ((ResponseHandler.String) responseHandler).getFuture().complete(in.readUTF());
             } else if (responseHandler instanceof ResponseHandler.Location) {
                 ((ResponseHandler.Location) responseHandler).getFuture().complete(LocationInfo.read(in));
+            } else if (responseHandler instanceof ResponseHandler.PlayerInfo) {
+                ((ResponseHandler.PlayerInfo) responseHandler).getFuture().complete(PlayerInfo.read(in));
             } else {
                 plugin.logDebug("Response handler type " + responseHandler + " is not supported for ID " + id);
             }
@@ -407,7 +409,7 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         return isTeleporting.remove(playerName.toLowerCase(Locale.ROOT));
     }
 
-    protected static class PlayerInfo {
+    public static class PlayerInfo {
         private final UUID uuid;
         private final String name;
         private final String server;
@@ -454,8 +456,19 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         playerInfoMap.remove(player.toLowerCase(Locale.ROOT));
     }
 
-    private PlayerInfo getPlayerInfo(String player) {
-        return playerInfoMap.get(player.toLowerCase(Locale.ROOT));
+    private CompletableFuture<PlayerInfo> getPlayerInfo(String playerName) {
+        if (playerInfoMap.containsKey(playerName.toLowerCase(Locale.ROOT))) {
+            return CompletableFuture.completedFuture(playerInfoMap.get(playerName.toLowerCase(Locale.ROOT)));
+        }
+        CompletableFuture<PlayerInfo> future = new CompletableFuture<>();
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        long id = RANDOM.nextLong();
+        out.writeUTF(plugin.getServerName());
+        out.writeLong(id);
+        out.writeUTF(playerName);
+        responses.put(id, new ResponseHandler.PlayerInfo(future));
+        sendData(Action.GET_PLAYER_INFO, MessageTarget.ALL_PROXIES, PLAYER_PREFIX + playerName, out.toByteArray());
+        return future;
     }
 
     public static class Action {
@@ -465,6 +478,7 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         public static final String TELEPORT_TO_WORLD = "teleport_to_world";
         public static final String TELEPORT_TO_PLAYER = "teleport_to_player";
         public static final String GET_LOCATION = "get_location";
+        public static final String GET_PLAYER_INFO = "get_player_info";
         public static final String PLAYER_COMMAND = "player_command";
         public static final String PLAYER_JOIN = "player_join";
         public static final String PLAYER_LEAVE = "player_leave";
