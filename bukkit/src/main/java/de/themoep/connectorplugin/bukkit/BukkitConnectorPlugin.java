@@ -122,6 +122,14 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
         getServer().getScheduler().runTaskAsynchronously(this, runnable);
     }
 
+    public void runSync(Runnable runnable) {
+        if (getServer().isPrimaryThread()) {
+            runnable.run();
+            return;
+        }
+        getServer().getScheduler().runTask(this, runnable);
+    }
+
     @Override
     public MessageTarget.Type getSourceType() {
         return MessageTarget.Type.SERVER;

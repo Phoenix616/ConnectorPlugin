@@ -34,7 +34,7 @@ public class MqttConnector extends BukkitConnector {
                 plugin.getConfig().getString("mqtt.username"),
                 plugin.getConfig().getString("mqtt.password"),
                 plugin.getConfig().getInt("mqtt.keep-alive"),
-                this::handle
+                (receiver, message) -> plugin.runSync(() -> handle(receiver, message))
         );
     }
 
