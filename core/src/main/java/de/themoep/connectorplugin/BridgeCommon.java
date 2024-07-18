@@ -169,7 +169,7 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         if (consumer != null && consumer.length > 0) {
             consumers.put(id, consumer);
         }
-        sendData(Action.CONSOLE_COMMAND, MessageTarget.SERVER, out.toByteArray());
+        sendData(Action.CONSOLE_COMMAND, MessageTarget.SERVER, server, out.toByteArray());
         return future;
     }
 
@@ -191,7 +191,7 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
         if (consumer != null && consumer.length > 0) {
             consumers.put(id, consumer);
         }
-        sendData(Action.CONSOLE_COMMAND, MessageTarget.PROXY, out.toByteArray());
+        sendData(Action.CONSOLE_COMMAND, MessageTarget.PROXY, proxy, out.toByteArray());
         return future;
     }
 
