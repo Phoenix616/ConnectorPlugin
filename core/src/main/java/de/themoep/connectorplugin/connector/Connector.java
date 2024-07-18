@@ -43,7 +43,7 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
 
     private final boolean requiresPlayer;
 
-    private Table<String, String, BiConsumer<R, Message>> handlers = HashBasedTable.create();
+    private final Table<String, String, BiConsumer<R, Message>> handlers = HashBasedTable.create();
 
     public Connector(P plugin, boolean requiresPlayer) {
         this.plugin = plugin;
@@ -240,7 +240,7 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
     }
 
     /**
-     * Unregister a all handlers of a certain plugin
+     * Unregister all handlers of a certain plugin
      * @param plugin    The plugin to unregister the handlers of
      * @return The previously registered handlers if there were some or null
      * @since 1.5
