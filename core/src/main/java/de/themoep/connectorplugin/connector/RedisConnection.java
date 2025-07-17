@@ -116,9 +116,6 @@ public class RedisConnection {
     }
 
     public void sendMessage(String targetData, Message message) {
-        if (connection == null || !connection.isOpen()) {
-            connection = client.connect(new StringByteArrayCodec());
-        }
         byte[] messageData = message.writeToByteArray();
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -128,7 +125,19 @@ public class RedisConnection {
         out.write(messageData);
         byte[] dataToSend = out.toByteArray();
 
-        connection.async().publish(plugin.getMessageChannel(), dataToSend);
+        Runnable sendMessage = () -> connection.async().publish(plugin.getMessageChannel(), dataToSend);
+
+        if (connection == null || !connection.isOpen()) {
+            plugin.logDebug("No connection to Redis, reconnecting...");
+            plugin.runAsync(() -> {
+                if (connection == null || !connection.isOpen()) {
+                    connection = client.connect(new StringByteArrayCodec());
+                }
+                sendMessage.run();
+            });
+        } else {
+            sendMessage.run();
+        }
     }
 
     public void close() {
