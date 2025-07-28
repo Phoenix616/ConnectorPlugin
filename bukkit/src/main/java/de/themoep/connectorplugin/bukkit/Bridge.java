@@ -23,9 +23,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-import de.themoep.connectorplugin.BridgeCommon;
 import de.themoep.connectorplugin.LocationInfo;
 import de.themoep.connectorplugin.ResponseHandler;
+import de.themoep.connectorplugin.ServerBridgeCommon;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import io.papermc.lib.PaperLib;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -65,9 +65,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static de.themoep.connectorplugin.connector.Connector.PLAYER_PREFIX;
-import static de.themoep.connectorplugin.connector.Connector.PROXY_ID_PREFIX;
 
-public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implements Listener {
+public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> implements Listener {
 
     private CommandMap commandMap = null;
 
@@ -291,26 +290,7 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             }
         });
 
-        registerHandler(Action.RESPONSE, (receiver, data) -> {
-            ByteArrayDataInput in = ByteStreams.newDataInput(data);
-            long id = in.readLong();
-            boolean isCompletion = in.readBoolean();
-            if (isCompletion) {
-                handleResponse(id, in);
-            } else {
-                String message = in.readUTF();
-                Consumer<String>[] consumer = consumers.getIfPresent(id);
-                if (consumer != null) {
-                    for (Consumer<String> stringConsumer : consumer) {
-                        stringConsumer.accept(message);
-                    }
-                }
-            }
-        });
-
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(plugin.getServerName());
-        sendData(Action.STARTED, MessageTarget.ALL_PROXIES, out.toByteArray());
+        this.sendStarted(plugin);
     }
 
     @EventHandler
@@ -319,19 +299,19 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         if (request != null) {
             loginRequests.invalidate(event.getPlayer().getName().toLowerCase(Locale.ROOT));
             if (request instanceof LocationTeleportRequest) {
-                event.setSpawnLocation(adapt(((LocationTeleportRequest) request).location));
-                sendResponse(request.server, request.id, true, "Player login location changed");
-                plugin.logDebug("Set spawn location of player " + event.getPlayer().getName() + " to " + ((LocationTeleportRequest) request).location);
+                event.setSpawnLocation(adapt(((LocationTeleportRequest) request).getLocation()));
+                sendResponse(request.getServer(), request.getId(), true, "Player login location changed");
+                plugin.logDebug("Set spawn location of player " + event.getPlayer().getName() + " to " + ((LocationTeleportRequest) request).getLocation());
             } else if (request instanceof PlayerTeleportRequest) {
-                Player target = plugin.getServer().getPlayerExact(((PlayerTeleportRequest) request).targetName);
+                Player target = plugin.getServer().getPlayerExact(((PlayerTeleportRequest) request).getTargetName());
                 if (target == null) {
                     event.setSpawnLocation(plugin.getServer().getWorlds().get(0).getSpawnLocation());
-                    sendResponse(request.server, request.id, false, "Target player " + ((PlayerTeleportRequest) request).targetName + " is no longer online?");
-                    plugin.logDebug("Tried to set spawn location of player " + event.getPlayer().getName() + " to " + ((PlayerTeleportRequest) request).targetName + " but target wasn't online. Set to level spawn instead.");
+                    sendResponse(request.getServer(), request.getId(), false, "Target player " + ((PlayerTeleportRequest) request).getTargetName() + " is no longer online?");
+                    plugin.logDebug("Tried to set spawn location of player " + event.getPlayer().getName() + " to " + ((PlayerTeleportRequest) request).getTargetName() + " but target wasn't online. Set to level spawn instead.");
                 } else {
                     event.setSpawnLocation(target.getLocation());
-                    sendResponse(request.server, request.id, true, "Player login location changed to " + target.getName() + "'s location");
-                    plugin.logDebug("Set spawn location of player " + event.getPlayer().getName() + " to " + ((PlayerTeleportRequest) request).targetName + ". " + target.getLocation());
+                    sendResponse(request.getServer(), request.getId(), true, "Player login location changed to " + target.getName() + "'s location");
+                    plugin.logDebug("Set spawn location of player " + event.getPlayer().getName() + " to " + ((PlayerTeleportRequest) request).getTargetName() + ". " + target.getLocation());
                 }
             }
         }
@@ -377,15 +357,6 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
         );
     }
 
-    @Override
-    protected void sendResponseData(String target, byte[] out) {
-        sendData(
-                Action.RESPONSE,
-                target.startsWith(PROXY_ID_PREFIX) ? MessageTarget.PROXY : MessageTarget.SERVER,
-                target,
-                out);
-    }
-
     private void sendCommandExecution(CommandSender sender, BridgedCommandExecutor executor, String label, String[] args) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(executor.getServer());
@@ -405,36 +376,6 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             out.writeUTF(""); // Indicate empty location
             sendData(Action.EXECUTE_COMMAND, MessageTarget.ALL_PROXIES, out.toByteArray());
         }
-    }
-
-    /**
-     * Teleport a player to a certain server in the network
-     * @param playerName    The name of the player to send
-     * @param serverName    The name of the server to send to
-     * @param consumer      Details about the sending
-     * @return A future about whether the player could be sent
-     */
-    public CompletableFuture<Boolean> sendToServer(String playerName, String serverName, Consumer<String>... consumer) {
-        CompletableFuture<Boolean> future = new CompletableFuture<>();
-        getServer(playerName).whenComplete((s, e) -> {
-            // check player server existence
-            if (s == null) {
-                future.complete(false);
-                for (Consumer<String> c : consumer) {
-                    c.accept("Player " + playerName + " is not online!");
-                }
-                return;
-            }
-            ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            long id = RANDOM.nextLong();
-            out.writeLong(id);
-            out.writeUTF(playerName);
-            out.writeUTF(serverName);
-            responses.put(id, new ResponseHandler.Boolean(future));
-            consumers.put(id, consumer);
-            sendData(Action.SEND_TO_SERVER, MessageTarget.PROXY, PLAYER_PREFIX + playerName, out.toByteArray());
-        });
-        return future;
     }
 
     @Override
@@ -612,54 +553,6 @@ public class Bridge extends BridgeCommon<BukkitConnectorPlugin, Player> implemen
             sendData(Action.PLAYER_COMMAND, MessageTarget.PROXY, player, out.toByteArray());
         });
         return future;
-    }
-
-    /**
-     * Run a console command on the connected proxies
-     * @param command   The command to run
-     * @param consumer  Optional Consumer (or multiple) for the messages triggered by the command
-     * @return A future for whether the command was run successfully
-     */
-    public CompletableFuture<Boolean> runProxyConsoleCommand(String command, Consumer<String>... consumer) {
-        CompletableFuture<Boolean> future = new CompletableFuture<>();
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        long id = RANDOM.nextLong();
-        out.writeLong(id);
-        out.writeUTF(command);
-        responses.put(id, new ResponseHandler.Boolean(future));
-        if (consumer != null && consumer.length > 0) {
-            consumers.put(id, consumer);
-        }
-        sendData(Action.CONSOLE_COMMAND, MessageTarget.ALL_PROXIES, out.toByteArray());
-        return future;
-    }
-
-    private static class LoginRequest {
-        private final String server;
-        private final long id;
-
-        private LoginRequest(String server, long id) {
-            this.server = server;
-            this.id = id;
-        }
-    }
-
-    private static class LocationTeleportRequest extends LoginRequest {
-        private final LocationInfo location;
-
-        public LocationTeleportRequest(String server, long id, LocationInfo location) {
-            super(server, id);
-            this.location = location;
-        }
-    }
-
-    private static class PlayerTeleportRequest extends LoginRequest {
-        private final String targetName;
-
-        public PlayerTeleportRequest(String server, long id, String targetName) {
-            super(server, id);
-            this.targetName = targetName;
-        }
     }
 
     private class BridgedSender implements ConsoleCommandSender {

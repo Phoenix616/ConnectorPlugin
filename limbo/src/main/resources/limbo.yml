@@ -1,0 +1,4 @@
+name: ConnectorPlugin
+main: de.themoep.connectorplugin.limbo.LimboConnectorPlugin
+version: ${minecraft.plugin.version}
+author: Phoenix616

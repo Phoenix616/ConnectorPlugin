@@ -1,6 +1,6 @@
 # ConnectorPlugin
 
-Plugin to simplify communication between multiple Minecraft servers in a network (and their proxy). Support Spigot/Paper, BungeeCord and Velocity.
+Plugin to simplify communication between multiple Minecraft servers in a network (and their proxy). Support Spigot/Paper, Limbo, BungeeCord and Velocity.
 
 This includes a bridging utility and some basic commands to use the provided utility functionality but it is mostly meant to be depended on by other plugins so they can easily query and send data between servers without having to implement that logic themselves.
 
@@ -22,7 +22,7 @@ This includes a bridging utility and some basic commands to use the provided uti
 
 ## Commands
 
-### On the Spigot server
+### On the Spigot or Limbo server
 
 > `/connectorplugin`  
 > *Permission:* `connectorplugin.command`  
@@ -123,7 +123,7 @@ Check [the wiki](https://wiki.phoenix616.dev/plugin:connectorplugin:usage:start)
 ```xml
 <dependency>
     <groupId>de.themoep.connectorplugin</groupId>
-    <artifactId>[bukkit|bungee|velocity]</artifactId>
+    <artifactId>[bukkit|bungee|limbo|velocity]</artifactId>
     <version>1.2-SNAPSHOT</version>
     <scope>provided</scope>
 </dependency>

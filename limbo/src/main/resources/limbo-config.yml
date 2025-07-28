@@ -1,0 +1,29 @@
+# Plugin debugging
+debug: true
+
+# Currently supported types:
+# - "plugin_messages" (will not be able to send messages from server without any players online)
+# - "redis" (does not require online players)
+# - "mqtt" (does not require online players)
+messenger-type: redis
+
+# The group this server is in
+group: global
+
+# Should be the same name as in the proxy config
+server-name: changeme
+
+# Redis messenger settings
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+  timeout: 60
+  password: password1
+
+# Mqtt messenger settings
+mqtt:
+  broker-uri: tcp://localhost:1883
+  keep-alive: 30
+  username: mqttuser
+  password: password1
