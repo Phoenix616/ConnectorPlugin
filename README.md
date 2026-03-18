@@ -1,4 +1,4 @@
-# ConnectorPlugin
+![ConnectorPlugin Logo](logo.png)
 
 Plugin to simplify communication between multiple Minecraft servers in a network (and their proxy). Support Spigot/Paper, Limbo, BungeeCord and Velocity.
 
