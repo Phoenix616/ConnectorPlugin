@@ -41,7 +41,8 @@ public class ProxyConsoleCommand extends SubCommand {
 
         String commandString = String.join(" ", args);
         sender.sendMessage(ChatColor.GRAY + "Executing '" + commandString + "' on proxy");
-        plugin.getBridge().runProxyConsoleCommand(commandString, sender::sendMessage).thenAccept(success -> sender.sendMessage(success ? "Successfully executed command!" : "Error while executing the command."));
+        plugin.getBridge().runProxyConsoleCommand(commandString, plugin.messageConsumer(sender))
+                .thenAccept(success -> plugin.sendMessage(sender, success ? "Successfully executed command!" : "Error while executing the command."));
         return true;
     }
 

@@ -32,13 +32,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 
 public class PluginMessageConnector extends BukkitConnector implements PluginMessageListener, Listener {
 
-    private final Deque<byte[]> queue = new ArrayDeque<>();
+    private final Queue<byte[]> queue = new ConcurrentLinkedQueue<>();
 
     public PluginMessageConnector(BukkitConnectorPlugin plugin) {
         super(plugin, true);
@@ -94,25 +94,31 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
         out.write(messageData);
         byte[] dataToSend = out.toByteArray();
 
-        Player player = null;
-        if (!targetData.startsWith("server:")) {
-            player = plugin.getServer().getPlayerExact(targetData);
-        }
-        if (player != null) {
-            player.sendPluginMessage(plugin, plugin.getMessageChannel(), dataToSend);
-        } else {
-            if (plugin.getServer().getOnlinePlayers().isEmpty()) {
-                queue.add(dataToSend);
-            } else {
-                plugin.getServer().getOnlinePlayers().iterator().next().sendPluginMessage(plugin, plugin.getMessageChannel(), dataToSend);
-            }
-        }
+        plugin.runGlobal(() -> sendPluginMessage(targetData, dataToSend));
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
-        while (!queue.isEmpty()) {
-            event.getPlayer().sendPluginMessage(plugin, plugin.getMessageChannel(), queue.remove());
+        byte[] data;
+        while ((data = queue.poll()) != null) {
+            event.getPlayer().sendPluginMessage(plugin, plugin.getMessageChannel(), data);
+        }
+    }
+
+    private void sendPluginMessage(String targetData, byte[] dataToSend) {
+        targetData = targetData != null ? targetData : "";
+        Player player = null;
+        if (targetData.startsWith(PLAYER_PREFIX)) {
+            player = plugin.getServer().getPlayerExact(targetData.substring(PLAYER_PREFIX.length()));
+        }
+        if (player != null) {
+            Player targetPlayer = player;
+            plugin.runForPlayer(targetPlayer, () -> targetPlayer.sendPluginMessage(plugin, plugin.getMessageChannel(), dataToSend));
+        } else if (plugin.getServer().getOnlinePlayers().isEmpty()) {
+            queue.add(dataToSend);
+        } else {
+            Player anyPlayer = plugin.getServer().getOnlinePlayers().iterator().next();
+            plugin.runForPlayer(anyPlayer, () -> anyPlayer.sendPluginMessage(plugin, plugin.getMessageChannel(), dataToSend));
         }
     }
 }

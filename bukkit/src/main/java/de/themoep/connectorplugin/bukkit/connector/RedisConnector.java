@@ -35,7 +35,7 @@ public class RedisConnector extends BukkitConnector {
                 plugin.getConfig().getInt("redis.db"),
                 plugin.getConfig().getString("redis.password"),
                 plugin.getConfig().getLong("redis.timeout"),
-                (receiver, message) -> plugin.runSync(() -> handle(receiver, message))
+                this::handle
         );
     }
 

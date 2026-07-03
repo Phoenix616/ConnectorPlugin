@@ -27,14 +27,13 @@ import de.themoep.connectorplugin.connector.Message;
 import de.themoep.connectorplugin.connector.MessageTarget;
 import de.themoep.connectorplugin.connector.VersionMismatchException;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -45,10 +44,10 @@ public abstract class BridgeCommon<P extends ConnectorPlugin<R>, R> {
     private static final int VERSION = 2;
     protected final P plugin;
 
-    protected final Map<String, PlayerInfo> playerInfoMap = new HashMap<>();
+    protected final Map<String, PlayerInfo> playerInfoMap = new ConcurrentHashMap<>();
     protected final Cache<Long, ResponseHandler<?>> responses = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
     protected final Cache<Long, Consumer<String>[]> consumers = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build();
-    private final Set<String> isTeleporting = new HashSet<>();
+    private final Set<String> isTeleporting = ConcurrentHashMap.newKeySet();
 
     protected static final Random RANDOM = new Random();
 

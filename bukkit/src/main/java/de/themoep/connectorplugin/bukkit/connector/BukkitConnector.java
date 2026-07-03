@@ -38,11 +38,35 @@ public abstract class BukkitConnector extends Connector<BukkitConnectorPlugin, P
     }
 
     @Override
+    protected void handle(String receiver, Message message) {
+        plugin.runGlobal(() -> {
+            if (!isThis(receiver)) {
+                return;
+            }
+
+            Player player = getReceiver(receiver);
+            if (player != null) {
+                plugin.runForPlayer(player, () -> handleOnScheduledThread(player, message));
+            } else {
+                handleOnScheduledThread(null, message);
+            }
+        });
+    }
+
+    @Override
     protected void handle(Player receiver, Message message) {
+        if (receiver != null) {
+            plugin.runForPlayer(receiver, () -> handleOnScheduledThread(receiver, message));
+        } else {
+            plugin.runGlobal(() -> handleOnScheduledThread(null, message));
+        }
+    }
+
+    private void handleOnScheduledThread(Player receiver, Message message) {
         switch (message.getTarget()) {
             case OTHERS_WITH_PLAYERS:
             case ALL_WITH_PLAYERS:
-                if (plugin.getServer().getOnlinePlayers().isEmpty()) {
+                if (receiver == null && plugin.getServer().getOnlinePlayers().isEmpty()) {
                     return;
                 }
         }

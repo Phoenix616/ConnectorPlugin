@@ -46,7 +46,8 @@ public class ProxyPlayerCommand extends SubCommand {
         }
         String commandString = Arrays.stream(args).skip(1).collect(Collectors.joining(" "));
         sender.sendMessage(ChatColor.GRAY + "Executing '" + commandString + "' on the proxy for player '" + player.getName() + "'");
-        plugin.getBridge().runProxyPlayerCommand(player, commandString).thenAccept(success -> sender.sendMessage(success ? "Successfully executed command!" : "Error while executing the command."));
+        plugin.getBridge().runProxyPlayerCommand(player, commandString)
+                .thenAccept(success -> plugin.sendMessage(sender, success ? "Successfully executed command!" : "Error while executing the command."));
         return true;
     }
 

@@ -1,7 +1,8 @@
 name: ConnectorPlugin
 version: ${minecraft.plugin.version}
 main: de.themoep.connectorplugin.bukkit.BukkitConnectorPlugin
-api-version: 1.13
+api-version: '26.1.2'
+folia-supported: true
 authors: [Phoenix616]
 commands:
   connectorplugin:

@@ -44,11 +44,11 @@ public class TeleportToPlayerCommand extends SubCommand {
             return false;
         }
 
-        plugin.getBridge().teleport(playerName, targetName, sender::sendMessage).thenAccept(success -> {
+        plugin.getBridge().teleport(playerName, targetName, plugin.messageConsumer(sender)).thenAccept(success -> {
             if (success) {
-                sender.sendMessage(ChatColor.GREEN + "Successfully teleported " + playerName + " to " + targetName);
+                plugin.sendMessage(sender, ChatColor.GREEN + "Successfully teleported " + playerName + " to " + targetName);
             } else {
-                sender.sendMessage(ChatColor.RED + "Error while teleporting " + playerName + " to " + targetName);
+                plugin.sendMessage(sender, ChatColor.RED + "Error while teleporting " + playerName + " to " + targetName);
             }
         });
         return true;

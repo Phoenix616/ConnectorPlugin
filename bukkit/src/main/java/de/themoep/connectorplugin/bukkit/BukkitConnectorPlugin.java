@@ -24,8 +24,11 @@ import de.themoep.connectorplugin.bukkit.connector.BukkitConnector;
 import de.themoep.connectorplugin.bukkit.connector.MqttConnector;
 import de.themoep.connectorplugin.bukkit.connector.PluginMessageConnector;
 import de.themoep.connectorplugin.bukkit.connector.RedisConnector;
+import de.themoep.connectorplugin.bukkit.scheduler.ConnectorScheduler;
+import de.themoep.connectorplugin.bukkit.scheduler.FoliaConnectorScheduler;
 import de.themoep.connectorplugin.connector.ConnectingPlugin;
 import de.themoep.connectorplugin.connector.MessageTarget;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -38,6 +41,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.function.Consumer;
 
 public final class BukkitConnectorPlugin extends JavaPlugin implements ConnectorPlugin<Player>, Listener {
 
@@ -47,9 +51,12 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
     private String globalGroup;
     private Map<String, String> pluginGroups;
     private String serverName;
+    private ConnectorScheduler scheduler;
 
     @Override
     public void onEnable() {
+        scheduler = new FoliaConnectorScheduler(this);
+
         saveDefaultConfig();
         reloadConfig();
 
@@ -94,7 +101,12 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
 
     @Override
     public void onDisable() {
-        connector.close();
+        if (connector != null) {
+            connector.close();
+        }
+        if (scheduler != null) {
+            scheduler.cancelAll();
+        }
     }
 
     @EventHandler
@@ -119,15 +131,47 @@ public final class BukkitConnectorPlugin extends JavaPlugin implements Connector
 
     @Override
     public void runAsync(Runnable runnable) {
-        getServer().getScheduler().runTaskAsynchronously(this, runnable);
+        scheduler.runAsync(() -> {
+            if (isEnabled()) {
+                runnable.run();
+            }
+        });
     }
 
-    public void runSync(Runnable runnable) {
-        if (getServer().isPrimaryThread()) {
-            runnable.run();
-            return;
+    public void runGlobal(Runnable runnable) {
+        scheduler.runGlobal(() -> {
+            if (isEnabled()) {
+                runnable.run();
+            }
+        });
+    }
+
+    public void runForPlayer(Player player, Runnable runnable) {
+        scheduler.runForPlayer(player, ignored -> {
+            if (isEnabled() && player.isOnline()) {
+                runnable.run();
+            }
+        });
+    }
+
+    public void runForSender(CommandSender sender, Runnable runnable) {
+        if (sender instanceof Player) {
+            runForPlayer((Player) sender, runnable);
+        } else {
+            runGlobal(runnable);
         }
-        getServer().getScheduler().runTask(this, runnable);
+    }
+
+    public void sendMessage(CommandSender sender, String message) {
+        runForSender(sender, () -> sender.sendMessage(message));
+    }
+
+    public Consumer<String> messageConsumer(CommandSender sender) {
+        return message -> sendMessage(sender, message);
+    }
+
+    public ConnectorScheduler getSchedulerAdapter() {
+        return scheduler;
     }
 
     @Override

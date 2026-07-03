@@ -40,21 +40,21 @@ public class TeleportCommand extends SubCommand {
         String serverName = args[1];
 
         if (args.length == 2) {
-            plugin.getBridge().sendToServer(playerName, serverName, sender::sendMessage).thenAccept(success -> {
+            plugin.getBridge().sendToServer(playerName, serverName, plugin.messageConsumer(sender)).thenAccept(success -> {
                 if (success) {
-                    sender.sendMessage(ChatColor.GREEN + "Successfully connected " + playerName + " to " + serverName);
+                    plugin.sendMessage(sender, ChatColor.GREEN + "Successfully connected " + playerName + " to " + serverName);
                 } else {
-                    sender.sendMessage(ChatColor.RED + "Error while sending " + playerName + " to " + serverName);
+                    plugin.sendMessage(sender, ChatColor.RED + "Error while sending " + playerName + " to " + serverName);
                 }
             });
             return true;
         }
 
         if (args.length == 3) {
-            plugin.getBridge().teleport(playerName, serverName, args[2], sender::sendMessage)
+            plugin.getBridge().teleport(playerName, serverName, args[2], plugin.messageConsumer(sender))
                     .thenAccept(success -> {
                         if (!success) {
-                            sender.sendMessage(ChatColor.RED + "Error while teleporting...");
+                            plugin.sendMessage(sender, ChatColor.RED + "Error while teleporting...");
                         }
                     });
             return true;
@@ -76,10 +76,10 @@ public class TeleportCommand extends SubCommand {
             );
 
             sender.sendMessage("Sending teleport request for " + playerName);
-            plugin.getBridge().teleport(playerName, location, sender::sendMessage)
+            plugin.getBridge().teleport(playerName, location, plugin.messageConsumer(sender))
                     .thenAccept(success -> {
                         if (!success) {
-                            sender.sendMessage(ChatColor.RED + "Error while teleporting...");
+                            plugin.sendMessage(sender, ChatColor.RED + "Error while teleporting...");
                         }
             });
             return true;

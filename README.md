@@ -1,6 +1,6 @@
 ![ConnectorPlugin Logo](logo.png)
 
-Plugin to simplify communication between multiple Minecraft servers in a network (and their proxy). Support Spigot/Paper, Limbo, BungeeCord and Velocity.
+Plugin to simplify communication between multiple Minecraft servers in a network (and their proxy). Supports Paper/Folia, Limbo, BungeeCord and Velocity.
 
 This includes a bridging utility and some basic commands to use the provided utility functionality but it is mostly meant to be depended on by other plugins so they can easily query and send data between servers without having to implement that logic themselves.
 
@@ -20,9 +20,13 @@ This includes a bridging utility and some basic commands to use the provided uti
 - [x] redis pub sub
 - [x] MQTT (E.g. with RabbitMQ)
 
+## Folia
+
+The Bukkit runtime is Folia-compatible and targets Java 25. See [docs/FOLIA.md](docs/FOLIA.md) for build, deployment, and Lobby1 staging notes.
+
 ## Commands
 
-### On the Spigot or Limbo server
+### On the Paper/Folia or Limbo server
 
 > `/connectorplugin`  
 > *Permission:* `connectorplugin.command`  

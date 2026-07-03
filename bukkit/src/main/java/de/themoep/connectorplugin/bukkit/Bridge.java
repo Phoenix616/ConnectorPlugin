@@ -27,9 +27,9 @@ import de.themoep.connectorplugin.LocationInfo;
 import de.themoep.connectorplugin.ResponseHandler;
 import de.themoep.connectorplugin.ServerBridgeCommon;
 import de.themoep.connectorplugin.connector.MessageTarget;
-import io.papermc.lib.PaperLib;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -62,6 +62,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static de.themoep.connectorplugin.connector.Connector.PLAYER_PREFIX;
@@ -106,7 +107,8 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
             Player player = plugin.getServer().getPlayerExact(playerName);
             if (player != null) {
                 plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to " + location);
-                PaperLib.teleportAsync(player, adapt(location)).whenComplete((success, ex) -> {
+                Location targetLocation = adapt(location);
+                teleportPlayer(player, targetLocation, playerName, (success, ex) -> {
                     sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
                     plugin.logDebug("[M] Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
 
@@ -148,7 +150,7 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
             Player player = plugin.getServer().getPlayerExact(playerName);
             if (player != null) {
                 plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to spawn of world " + worldName);
-                PaperLib.teleportAsync(player, world.getSpawnLocation()).whenComplete((success, ex) -> {
+                teleportPlayer(player, world.getSpawnLocation(), playerName, (success, ex) -> {
                     sendResponse(senderServer, id, success, success ? "Player teleported to spawn of " + worldName + "!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
                     plugin.logDebug("[M] Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
 
@@ -180,10 +182,16 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
                 Player player = plugin.getServer().getPlayerExact(playerName);
                 if (player != null) {
                     plugin.logDebug("[M] Player " + playerName + " is online. Teleporting to player " + targetName);
-                    PaperLib.teleportAsync(player, target.getLocation()).whenComplete((success, ex) -> {
-                        sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
-                        plugin.logDebug("[M] Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
+                    plugin.getSchedulerAdapter().runForPlayer(target, scheduledTask -> {
+                        Location targetLocation = target.getLocation();
+                        teleportPlayer(player, targetLocation, playerName, (success, ex) -> {
+                            sendResponse(senderServer, id, success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                            plugin.logDebug("[M] Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
 
+                            unmarkTeleporting(playerName);
+                        });
+                    }, () -> {
+                        sendResponse(senderServer, id, false, "Target player " + targetName + " is no longer online?");
                         unmarkTeleporting(playerName);
                     });
                 } else {
@@ -207,7 +215,9 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
 
             Player player = plugin.getServer().getPlayerExact(playerName);
             if (player != null) {
-                sendResponse(senderServer, id, adapt(player.getLocation()));
+                plugin.getSchedulerAdapter().runForPlayer(player,
+                        scheduledTask -> sendResponse(senderServer, id, adapt(player.getLocation())),
+                        () -> sendResponse(senderServer, id, (LocationInfo) null));
             } else {
                 sendResponse(senderServer, id, (LocationInfo) null);
             }
@@ -231,28 +241,32 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
                 return;
             }
 
-            PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(player, "/" + command);
-            plugin.getServer().getPluginManager().callEvent(event);
+            Player commandPlayer = player;
+            plugin.getSchedulerAdapter().runForPlayer(commandPlayer, scheduledTask -> {
+                PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(commandPlayer, "/" + command);
+                plugin.getServer().getPluginManager().callEvent(event);
 
-            if (event.isCancelled()) {
-                plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + senderServer + " was cancelled by a PlayerCommandPreprocessEvent listener!");
-                sendResponse(senderServer, id, false, "Command " + command + " was cancelled by a PlayerCommandPreprocessEvent listener");
-                return;
-            }
+                if (event.isCancelled()) {
+                    plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + senderServer + " was cancelled by a PlayerCommandPreprocessEvent listener!");
+                    sendResponse(senderServer, id, false, "Command " + command + " was cancelled by a PlayerCommandPreprocessEvent listener");
+                    return;
+                }
 
-            plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + senderServer);
-            boolean success = plugin.getServer().dispatchCommand(player, command);
+                plugin.logDebug("Command '" + command + "' for player '" + playerName + "' triggered from " + senderServer);
+                boolean success = plugin.getServer().dispatchCommand(commandPlayer, command);
 
-            sendResponse(senderServer, id, success);
+                sendResponse(senderServer, id, success);
+            }, () -> sendResponse(senderServer, id, false, "Could not find player " + playerName + "/" + playerId + " on this server to execute command " + command));
         });
 
         registerMessageHandler(Action.CONSOLE_COMMAND, (receiver, message) -> {
             ByteArrayDataInput in = ByteStreams.newDataInput(message.getData());
             String senderServer = message.getReceivedMessage().getSendingServer();
             String targetServer = in.readUTF();
+            Player targetPlayer = null;
             if (targetServer.startsWith("p:")) {
-                Player player = plugin.getServer().getPlayerExact(targetServer.substring(2));
-                if (player == null) {
+                targetPlayer = plugin.getServer().getPlayerExact(targetServer.substring(2));
+                if (targetPlayer == null) {
                     return;
                 }
             } else if (!targetServer.equals(plugin.getServerName())) {
@@ -261,10 +275,18 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
             long id = in.readLong();
             String command = in.readUTF();
 
-            plugin.logDebug("Console command '" + command + "' triggered from " + senderServer);
-            boolean success = plugin.getServer().dispatchCommand(new BridgedSender(senderServer, id), command);
+            Runnable dispatchCommand = () -> {
+                plugin.logDebug("Console command '" + command + "' triggered from " + senderServer);
+                boolean success = plugin.getServer().dispatchCommand(new BridgedSender(senderServer, id), command);
 
-            sendResponse(senderServer, id, success);
+                sendResponse(senderServer, id, success);
+            };
+            Player commandTargetPlayer = targetPlayer;
+            if (commandTargetPlayer != null) {
+                plugin.runForPlayer(commandTargetPlayer, dispatchCommand);
+            } else {
+                plugin.runGlobal(dispatchCommand);
+            }
         });
 
         registerMessageHandler(Action.REGISTER_COMMAND, (receiver, message) -> {
@@ -305,13 +327,21 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
             } else if (request instanceof PlayerTeleportRequest) {
                 Player target = plugin.getServer().getPlayerExact(((PlayerTeleportRequest) request).getTargetName());
                 if (target == null) {
-                    event.setSpawnLocation(plugin.getServer().getWorlds().get(0).getSpawnLocation());
                     sendResponse(request.getServer(), request.getId(), false, "Target player " + ((PlayerTeleportRequest) request).getTargetName() + " is no longer online?");
-                    plugin.logDebug("Tried to set spawn location of player " + event.getPlayer().getName() + " to " + ((PlayerTeleportRequest) request).getTargetName() + " but target wasn't online. Set to level spawn instead.");
-                } else {
+                    plugin.logDebug("Tried to set spawn location of player " + event.getPlayer().getName() + " to " + ((PlayerTeleportRequest) request).getTargetName() + " but target wasn't online. Keeping the server-provided spawn instead.");
+                } else if (Bukkit.isOwnedByCurrentRegion(target)) {
                     event.setSpawnLocation(target.getLocation());
                     sendResponse(request.getServer(), request.getId(), true, "Player login location changed to " + target.getName() + "'s location");
                     plugin.logDebug("Set spawn location of player " + event.getPlayer().getName() + " to " + ((PlayerTeleportRequest) request).getTargetName() + ". " + target.getLocation());
+                } else {
+                    Player joiningPlayer = event.getPlayer();
+                    plugin.getSchedulerAdapter().runForPlayer(target, scheduledTask -> {
+                        Location targetLocation = target.getLocation();
+                        teleportPlayer(joiningPlayer, targetLocation, joiningPlayer.getName(), (success, ex) -> {
+                            sendResponse(request.getServer(), request.getId(), success, success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+                            plugin.logDebug("Post-join teleport of player " + joiningPlayer.getName() + " to " + ((PlayerTeleportRequest) request).getTargetName() + " " + (success ? "was successful" : "failed"), ex);
+                        });
+                    }, () -> sendResponse(request.getServer(), request.getId(), false, "Target player " + ((PlayerTeleportRequest) request).getTargetName() + " is no longer online?"));
                 }
             }
         }
@@ -357,6 +387,78 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
         );
     }
 
+    private void teleportPlayer(Player player, Location location, String playerName, BiConsumer<Boolean, Throwable> completion) {
+        plugin.getSchedulerAdapter().runForPlayer(player, scheduledTask -> {
+            if (!player.isOnline()) {
+                completion.accept(false, new IllegalStateException("Player is no longer online"));
+                return;
+            }
+            player.teleportAsync(location).whenComplete((success, ex) ->
+                    plugin.getSchedulerAdapter().runForPlayer(player,
+                            ignored -> completion.accept(Boolean.TRUE.equals(success), ex),
+                            () -> completion.accept(false, ex != null ? ex : new IllegalStateException("Player is no longer online")))
+            );
+        }, () -> completion.accept(false, new IllegalStateException("Player is no longer online")));
+    }
+
+    private void completeConsumers(Consumer<String>[] consumers, String message) {
+        for (Consumer<String> consumer : consumers) {
+            consumer.accept(message);
+        }
+    }
+
+    private void completeTeleportFuture(
+            CompletableFuture<Boolean> future,
+            String playerName,
+            Consumer<String>[] consumers,
+            String successMessage,
+            Boolean success,
+            Throwable ex
+    ) {
+        boolean completed = Boolean.TRUE.equals(success);
+        completeConsumers(consumers, completed ? successMessage : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
+        plugin.logDebug("Teleport of player " + playerName + " " + (completed ? "was successful" : "failed"), ex);
+        unmarkTeleporting(playerName);
+        future.complete(completed);
+    }
+
+    private void sendRemoteLocationTeleport(String playerName, LocationInfo location, CompletableFuture<Boolean> future, Consumer<String>[] consumers) {
+        getServer(playerName).whenComplete((s, e) -> {
+            if (s == null) {
+                future.complete(false);
+                completeConsumers(consumers, "Player " + playerName + " is not online!");
+                return;
+            }
+            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+            long id = RANDOM.nextLong();
+            out.writeLong(id);
+            out.writeUTF(playerName);
+            location.write(out);
+            responses.put(id, new ResponseHandler.Boolean(future));
+            this.consumers.put(id, consumers);
+            sendData(Action.TELEPORT, MessageTarget.PROXY, PLAYER_PREFIX + playerName, out.toByteArray());
+        });
+    }
+
+    private void sendRemoteWorldTeleport(String playerName, String serverName, String worldName, CompletableFuture<Boolean> future, Consumer<String>[] consumers) {
+        getServer(playerName).whenComplete((s, e) -> {
+            if (s == null) {
+                future.complete(false);
+                completeConsumers(consumers, "Player " + playerName + " is not online!");
+                return;
+            }
+            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+            long id = RANDOM.nextLong();
+            out.writeLong(id);
+            out.writeUTF(playerName);
+            out.writeUTF(serverName);
+            out.writeUTF(worldName);
+            responses.put(id, new ResponseHandler.Boolean(future));
+            this.consumers.put(id, consumers);
+            sendData(Action.TELEPORT_TO_WORLD, MessageTarget.PROXY, PLAYER_PREFIX + playerName, out.toByteArray());
+        });
+    }
+
     private void sendCommandExecution(CommandSender sender, BridgedCommandExecutor executor, String label, String[] args) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(executor.getServer());
@@ -380,107 +482,107 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
 
     @Override
     public CompletableFuture<Boolean> teleport(Player player, LocationInfo location, Consumer<String>... consumer) {
-        return teleport(player.getName(), location, consumer);
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        plugin.getSchedulerAdapter().runForPlayer(player, scheduledTask ->
+                teleport(player.getName(), location, consumer).whenComplete((success, ex) -> {
+                    if (ex != null) {
+                        future.completeExceptionally(ex);
+                    } else {
+                        future.complete(success);
+                    }
+                }), () -> future.complete(false));
+        return future;
     }
 
     @Override
     public CompletableFuture<Boolean> teleport(String playerName, LocationInfo location, Consumer<String>... consumer) {
         markTeleporting(playerName);
-        if (location.getServer().equals(plugin.getServerName())) {
-            Player player = plugin.getServer().getPlayerExact(playerName);
-            if (player != null) {
-                plugin.logDebug("Player " + playerName + " is online. Teleporting to " + location);
-                return PaperLib.teleportAsync(player, adapt(location)).whenComplete((success, ex) -> {
-                    for (Consumer<String> c : consumer) {
-                        c.accept(success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
-                    }
-                    plugin.logDebug("Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
-
-                    unmarkTeleporting(playerName);
-                });
-            }
-        }
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        getServer(playerName).whenComplete((s, e) -> {
-            // check player server existence
-            if (s == null) {
-                future.complete(false);
-                for (Consumer<String> c : consumer) {
-                    c.accept("Player " + playerName + " is not online!");
+        if (location.getServer().equals(plugin.getServerName())) {
+            plugin.runGlobal(() -> {
+                Player player = plugin.getServer().getPlayerExact(playerName);
+                if (player != null) {
+                    Location targetLocation;
+                    try {
+                        targetLocation = adapt(location);
+                    } catch (IllegalArgumentException e) {
+                        completeConsumers(consumer, e.getMessage());
+                        unmarkTeleporting(playerName);
+                        future.complete(false);
+                        return;
+                    }
+                    plugin.logDebug("Player " + playerName + " is online. Teleporting to " + location);
+                    teleportPlayer(player, targetLocation, playerName, (success, ex) ->
+                            completeTeleportFuture(future, playerName, consumer, "Player teleported!", success, ex));
+                } else {
+                    sendRemoteLocationTeleport(playerName, location, future, consumer);
                 }
-                return;
-            }
-            ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            long id = RANDOM.nextLong();
-            out.writeLong(id);
-            out.writeUTF(playerName);
-            location.write(out);
-            responses.put(id, new ResponseHandler.Boolean(future));
-            consumers.put(id, consumer);
-            sendData(Action.TELEPORT, MessageTarget.PROXY, PLAYER_PREFIX + playerName, out.toByteArray());
-        });
+            });
+        } else {
+            sendRemoteLocationTeleport(playerName, location, future, consumer);
+        }
         return future;
     }
 
     @Override
     public CompletableFuture<Boolean> teleport(Player player, String serverName, String worldName, Consumer<String>... consumer) {
-        return teleport(player.getName(), serverName, worldName, consumer);
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        plugin.getSchedulerAdapter().runForPlayer(player, scheduledTask ->
+                teleport(player.getName(), serverName, worldName, consumer).whenComplete((success, ex) -> {
+                    if (ex != null) {
+                        future.completeExceptionally(ex);
+                    } else {
+                        future.complete(success);
+                    }
+                }), () -> future.complete(false));
+        return future;
     }
 
     @Override
     public CompletableFuture<Boolean> teleport(String playerName, String serverName, String worldName, Consumer<String>... consumer) {
         markTeleporting(playerName);
-        if (serverName.equals(plugin.getServerName())) {
-            Player player = plugin.getServer().getPlayerExact(playerName);
-            if (player != null) {
-                World world = plugin.getServer().getWorld(worldName);
-                if (world == null) {
-                    plugin.logDebug("Player " + playerName + " is online but no world with the name " + worldName + " to teleport to exists?");
-                    for (Consumer<String> c : consumer) {
-                        c.accept("No world with the name " + worldName + " exists on the server!");
-                    }
-
-                    unmarkTeleporting(playerName);
-                    return CompletableFuture.completedFuture(false);
-                }
-                plugin.logDebug("Player " + playerName + " is online. Teleporting to spawn of world " + worldName);
-                return PaperLib.teleportAsync(player, world.getSpawnLocation()).whenComplete((success, ex) -> {
-                    for (Consumer<String> c : consumer) {
-                        c.accept(success ? "Player teleported!" : "Unable to teleport " + (ex != null ? ex.getMessage() : ""));
-                    }
-                    plugin.logDebug("Teleport of player " + playerName + " " + (success ? "was successful" : "failed"), ex);
-
-                    unmarkTeleporting(playerName);
-                });
-            }
-        }
-
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        getServer(playerName).whenComplete((s, e) -> {
-            // check player server existence
-            if (s == null) {
-                future.complete(false);
-                for (Consumer<String> c : consumer) {
-                    c.accept("Player " + playerName + " is not online!");
+        if (serverName.equals(plugin.getServerName())) {
+            plugin.runGlobal(() -> {
+                Player player = plugin.getServer().getPlayerExact(playerName);
+                if (player != null) {
+                    World world = plugin.getServer().getWorld(worldName);
+                    if (world == null) {
+                        plugin.logDebug("Player " + playerName + " is online but no world with the name " + worldName + " to teleport to exists?");
+                        completeConsumers(consumer, "No world with the name " + worldName + " exists on the server!");
+
+                        unmarkTeleporting(playerName);
+                        future.complete(false);
+                        return;
+                    }
+                    plugin.logDebug("Player " + playerName + " is online. Teleporting to spawn of world " + worldName);
+                    teleportPlayer(player, world.getSpawnLocation(), playerName, (success, ex) ->
+                            completeTeleportFuture(future, playerName, consumer, "Player teleported!", success, ex));
+                } else {
+                    sendRemoteWorldTeleport(playerName, serverName, worldName, future, consumer);
                 }
-                return;
-            }
-            ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            long id = RANDOM.nextLong();
-            out.writeLong(id);
-            out.writeUTF(playerName);
-            out.writeUTF(serverName);
-            out.writeUTF(worldName);
-            responses.put(id, new ResponseHandler.Boolean(future));
-            consumers.put(id, consumer);
-            sendData(Action.TELEPORT_TO_WORLD, MessageTarget.PROXY, PLAYER_PREFIX + playerName, out.toByteArray());
-        });
+            });
+        } else {
+            sendRemoteWorldTeleport(playerName, serverName, worldName, future, consumer);
+        }
         return future;
     }
 
     @Override
     public CompletableFuture<Boolean> teleport(Player player, Player target, Consumer<String>... consumer) {
-        return teleport(player.getName(), target.getName(), consumer);
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        plugin.getSchedulerAdapter().runForPlayer(target, scheduledTask -> {
+            String targetName = target.getName();
+            plugin.getSchedulerAdapter().runForPlayer(player, playerTask ->
+                    teleport(player.getName(), targetName, consumer).whenComplete((success, ex) -> {
+                        if (ex != null) {
+                            future.completeExceptionally(ex);
+                        } else {
+                            future.complete(success);
+                        }
+                    }), () -> future.complete(false));
+        }, () -> future.complete(false));
+        return future;
     }
 
     @Override
@@ -514,7 +616,7 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
      * @return A future for when the server was queried
      */
     public CompletableFuture<String> getServer(Player player) {
-        return getServer(player.getName());
+        return CompletableFuture.completedFuture(plugin.getServerName());
     }
 
     /**
@@ -523,7 +625,11 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
      * @return A future for when the location was queried
      */
     public CompletableFuture<LocationInfo> getLocation(Player player) {
-        return getLocation(player.getName());
+        CompletableFuture<LocationInfo> future = new CompletableFuture<>();
+        plugin.getSchedulerAdapter().runForPlayer(player,
+                scheduledTask -> future.complete(adapt(player.getLocation())),
+                () -> future.complete(null));
+        return future;
     }
 
     /**
@@ -535,10 +641,8 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
      */
     public CompletableFuture<Boolean> runProxyPlayerCommand(Player player, String command) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        // Make sure target player is connected
-        getServer(player).whenComplete((s, e) -> {
-            // check player server existence
-            if (s == null) {
+        plugin.getSchedulerAdapter().runForPlayer(player, scheduledTask -> {
+            if (!player.isOnline()) {
                 future.complete(false);
                 return;
             }
@@ -551,7 +655,7 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
             out.writeUTF(command);
             responses.put(id, new ResponseHandler.Boolean(future));
             sendData(Action.PLAYER_COMMAND, MessageTarget.PROXY, player, out.toByteArray());
-        });
+        }, () -> future.complete(false));
         return future;
     }
 
@@ -596,6 +700,11 @@ public class Bridge extends ServerBridgeCommon<BukkitConnectorPlugin, Player> im
         @Override
         public String getName() {
             return serverName + "BridgedSender";
+        }
+
+        @Override
+        public net.kyori.adventure.text.Component name() {
+            return net.kyori.adventure.text.Component.text(getName());
         }
 
         @Override

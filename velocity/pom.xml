@@ -13,20 +13,13 @@
     <artifactId>velocity</artifactId>
     <packaging>jar</packaging>
 
-    <repositories>
-        <repository>
-            <id>velocity-repo</id>
-            <url>https://repo.velocitypowered.com/snapshots/</url>
-        </repository>
-    </repositories>
-
     <dependencies>
         <dependency>
             <groupId>com.velocitypowered</groupId>
             <artifactId>velocity-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>${groupId}</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>core</artifactId>
             <version>${project.version}</version>
         </dependency>

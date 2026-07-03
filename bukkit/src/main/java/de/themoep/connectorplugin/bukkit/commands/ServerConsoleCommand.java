@@ -42,7 +42,8 @@ public class ServerConsoleCommand extends SubCommand {
         String serverName = args[0];
         String commandString = Arrays.stream(args).skip(1).collect(Collectors.joining(" "));
         sender.sendMessage(ChatColor.GRAY + "Executing '" + commandString + "' on server '" + serverName + "'");
-        plugin.getBridge().runServerConsoleCommand(serverName, commandString, sender::sendMessage).thenAccept(success -> sender.sendMessage(success ? "Successfully executed command!" : "Error while executing the command."));
+        plugin.getBridge().runServerConsoleCommand(serverName, commandString, plugin.messageConsumer(sender))
+                .thenAccept(success -> plugin.sendMessage(sender, success ? "Successfully executed command!" : "Error while executing the command."));
         return true;
     }
 

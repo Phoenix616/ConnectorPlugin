@@ -22,6 +22,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import de.themoep.connectorplugin.ConnectorPlugin;
 
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -87,7 +88,10 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
             }
         }
 
-        BiConsumer<R, Message> handler = handlers.get(message.getSendingPlugin().toLowerCase(Locale.ROOT), message.getAction());
+        BiConsumer<R, Message> handler;
+        synchronized (handlers) {
+            handler = handlers.get(message.getSendingPlugin().toLowerCase(Locale.ROOT), message.getAction());
+        }
         if (handler != null) {
             handler.accept(receiver, message);
         } else {
@@ -225,7 +229,9 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
      * @since 1.5
      */
     public BiConsumer<R, Message> registerMessageHandler(ConnectingPlugin plugin, String action, BiConsumer<R, Message> handler) {
-        return handlers.put(plugin.getName().toLowerCase(Locale.ROOT), action, handler);
+        synchronized (handlers) {
+            return handlers.put(plugin.getName().toLowerCase(Locale.ROOT), action, handler);
+        }
     }
 
     /**
@@ -236,7 +242,9 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
      * @since 1.5
      */
     public BiConsumer<R, Message> unregisterMessageHandler(ConnectingPlugin plugin, String action) {
-        return handlers.remove(plugin.getName().toLowerCase(Locale.ROOT), action);
+        synchronized (handlers) {
+            return handlers.remove(plugin.getName().toLowerCase(Locale.ROOT), action);
+        }
     }
 
     /**
@@ -246,7 +254,10 @@ public abstract class Connector<P extends ConnectorPlugin, R> {
      * @since 1.5
      */
     public Map<String, BiConsumer<R, Message>> unregisterMessageHandlers(ConnectingPlugin plugin) {
-        return handlers.rowMap().remove(plugin.getName().toLowerCase(Locale.ROOT));
+        synchronized (handlers) {
+            Map<String, BiConsumer<R, Message>> removed = handlers.rowMap().remove(plugin.getName().toLowerCase(Locale.ROOT));
+            return removed != null ? new HashMap<>(removed) : null;
+        }
     }
 
     /**
