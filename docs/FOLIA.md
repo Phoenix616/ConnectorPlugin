@@ -1,6 +1,7 @@
 # Folia support
 
 ConnectorPlugin's Bukkit runtime is marked as Folia-compatible for Lobby1's Folia migration.
+Existing ConnectorPlugin behavior is preserved; the Redis/MQTT remote command protocol and accepted command set are unchanged.
 
 ## Supported runtime
 
@@ -36,10 +37,12 @@ target/ConnectorPlugin.jar
   - `Bukkit.getRegionScheduler()`
   - `Player#getScheduler()`
 - Redis and MQTT inbound callbacks no longer execute Bukkit API directly from connector/network threads.
+- Plugin-message callbacks parse payloads only; target lookup and handler execution are handed to the Folia scheduler path.
 - Player teleports, player command dispatch, player location reads, and plugin-message sends are handed to the owning player scheduler.
 - Server-scoped console command dispatch runs on the global scheduler. `p:<player>` server command dispatch runs on that player's scheduler.
 - Shared bridge bookkeeping was made concurrency-safe for regionized callback execution.
-- A test guard fails the build if legacy Bukkit scheduler APIs are reintroduced under `bukkit/src/main/java`.
+- Scheduler callbacks no-op after plugin disable, so delayed handoffs do not touch Bukkit state during shutdown.
+- Test guards fail the build if legacy Bukkit scheduler APIs, Vault/PaperLib runtime dependencies, or missing Folia metadata are reintroduced.
 
 ## Vault
 
@@ -58,10 +61,12 @@ ConnectorPlugin has no Vault, Economy, or ServicesManager runtime dependency. Va
 3. Install `target/ConnectorPlugin.jar`.
 4. Start Folia Lobby1 with Java 25.
 5. Confirm ConnectorPlugin enables without unsupported-plugin or Folia metadata warnings.
-6. Run ConnectorPlugin commands and connector flows.
-7. Watch console for async/thread violation warnings.
-8. Stop and restart Lobby1 to confirm scheduler and connector cleanup.
-9. Keep the previous jar/config available for rollback.
+6. Run existing ConnectorPlugin commands.
+7. Exercise existing Redis/MQTT remote console and player command paths.
+8. Exercise connector teleport and plugin-message paths.
+9. Watch console for async/thread violation warnings.
+10. Stop and restart Lobby1 to confirm scheduler and connector cleanup.
+11. Keep the previous jar/config available for rollback.
 
 ## Rollback
 

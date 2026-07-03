@@ -57,25 +57,13 @@ public class PluginMessageConnector extends BukkitConnector implements PluginMes
         String group = in.readUTF();
 
         String target = in.readUTF();
-        if (!isThis(target)) {
-            return;
-        }
-
-        if (target.startsWith(PLAYER_PREFIX)) {
-            String playerName = target.substring(PLAYER_PREFIX.length());
-            player = getReceiver(playerName);
-            if (player == null) {
-                plugin.logError("Player " + playerName + " wasn't found online?");
-                return;
-            }
-        }
 
         int messageLength = in.readInt();
         byte[] messageData = new byte[messageLength];
         in.readFully(messageData);
 
         try {
-            handle( player, Message.fromByteArray(group, messageData));
+            handle(target, Message.fromByteArray(group, messageData));
         } catch (IllegalArgumentException e) {
             plugin.logError("Invalid message target! " + e.getMessage());
         } catch (VersionMismatchException e) {

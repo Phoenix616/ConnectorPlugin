@@ -82,10 +82,16 @@ public class FoliaConnectorScheduler implements ConnectorScheduler {
     private Consumer<ScheduledTask> tracked(Consumer<ScheduledTask> task) {
         return scheduledTask -> {
             track(scheduledTask);
+            boolean remove = false;
             try {
+                if (!plugin.isEnabled()) {
+                    scheduledTask.cancel();
+                    remove = true;
+                    return;
+                }
                 task.accept(scheduledTask);
             } finally {
-                if (!scheduledTask.isRepeatingTask()) {
+                if (remove || shouldRemove(scheduledTask)) {
                     tasks.remove(scheduledTask);
                 }
             }
@@ -93,8 +99,19 @@ public class FoliaConnectorScheduler implements ConnectorScheduler {
     }
 
     private void track(ScheduledTask task) {
-        if (task != null) {
+        if (task != null && !isFinished(task)) {
             tasks.add(task);
         }
+    }
+
+    private boolean shouldRemove(ScheduledTask task) {
+        return !task.isRepeatingTask() || task.isCancelled() || isFinished(task);
+    }
+
+    private boolean isFinished(ScheduledTask task) {
+        return switch (task.getExecutionState()) {
+            case FINISHED, CANCELLED, CANCELLED_RUNNING -> true;
+            case IDLE, RUNNING -> false;
+        };
     }
 }
